@@ -1,98 +1,172 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useCallback, useMemo } from "react";
+import { View, Text, Pressable, StyleSheet } from "react-native";
+import { router } from "expo-router";
+import { FlashList } from "@shopify/flash-list";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { getColors } from "@/constants/colors";
+import { Typography } from "@/constants/typography";
+import { Spacing, Radius } from "@/constants/spacing";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useReminders } from "@/hooks/use-reminders";
+import { useAdherence } from "@/hooks/use-adherence";
+import { ProgressBar } from "@/components/progress-bar";
+import { ReminderCard } from "@/components/reminder-card";
+import { EmptyState } from "@/components/empty-state";
+import { formatDateLong } from "@/utils/date-helpers";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+function getGreeting(): { text: string; icon: string } {
+  const hour = new Date().getHours();
+  if (hour < 12) return { text: "Good morning", icon: "weather-sunny" };
+  if (hour < 17) return { text: "Good afternoon", icon: "weather-partly-cloudy" };
+  return { text: "Good evening", icon: "weather-night" };
+}
 
-export default function HomeScreen() {
+export default function TodayScreen() {
+  const scheme = useColorScheme();
+  const colors = getColors(scheme);
+  const { todayReminders, loading: remindersLoading } = useReminders();
+  const { markTaken, getLogsForDate } = useAdherence();
+
+  const greeting = useMemo(() => getGreeting(), []);
+  const todayStr = useMemo(
+    () => formatDateLong(new Date()),
+    [],
+  );
+  const todayLogs = useMemo(
+    () => getLogsForDate(new Date().toISOString().split("T")[0]),
+    [getLogsForDate],
+  );
+  const takenIds = useMemo(
+    () => new Set(todayLogs.filter((l) => l.status === "taken").map((l) => l.reminderId)),
+    [todayLogs],
+  );
+  const takenCount = takenIds.size;
+  const totalCount = todayReminders.length;
+
+  const handleMarkTaken = useCallback(
+    (reminderId: string) => {
+      markTaken(reminderId);
+    },
+    [markTaken],
+  );
+
+  const sortedReminders = useMemo(
+    () =>
+      [...todayReminders].sort((a, b) => {
+        if (a.hour !== b.hour) return a.hour - b.hour;
+        return a.minute - b.minute;
+      }),
+    [todayReminders],
+  );
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={["top"]}
+    >
+      <FlashList
+        data={sortedReminders}
+        keyExtractor={(item) => item.id}
+        ListHeaderComponent={
+          <View style={styles.header}>
+            {/* Greeting */}
+            <View style={styles.greetingRow}>
+              <Text style={[styles.greeting, { color: colors.textPrimary }]}>
+                {greeting.text}
+              </Text>
+              <MaterialCommunityIcons
+                name={greeting.icon}
+                size={22}
+                color={colors.primary}
               />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+            </View>
+            <Text style={[styles.date, { color: colors.textSecondary }]}>
+              {todayStr}
+            </Text>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+            {/* Progress */}
+            {totalCount > 0 && (
+              <View style={styles.progressWrap}>
+                <ProgressBar taken={takenCount} total={totalCount} />
+              </View>
+            )}
+          </View>
+        }
+        ListEmptyComponent={
+          <EmptyState
+            icon="pill"
+            title="No meds today!"
+            message="Enjoy your day or add a new reminder."
+            buttonLabel="+ Add Reminder"
+            onPress={() => router.push("/add-reminder")}
+          />
+        }
+        renderItem={({ item }) => (
+          <ReminderCard
+            reminder={item}
+            isTaken={takenIds.has(item.id)}
+            onMarkTaken={() => handleMarkTaken(item.id)}
+          />
+        )}
+        contentContainerStyle={styles.list}
+      />
+
+      {/* FAB */}
+      {totalCount > 0 && (
+        <Pressable
+          onPress={() => router.push("/add-reminder")}
+          style={[styles.fab, { backgroundColor: colors.primary }]}
+          accessibilityLabel="Add new reminder"
+        >
+          <Text style={styles.fabIcon}>+</Text>
+        </Pressable>
+      )}
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: { flex: 1 },
+  header: {
+    padding: Spacing.md,
+    paddingBottom: 0,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  greeting: {
+    ...Typography.lg,
+    fontWeight: Typography.bold,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  greetingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  date: {
+    ...Typography.base,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.lg,
+  },
+  progressWrap: {
+    marginBottom: Spacing.md,
+  },
+  list: {
+    padding: Spacing.md,
+    paddingTop: 0,
+  },
+  fab: {
+    position: "absolute",
+    bottom: Spacing.xl,
+    right: Spacing.lg,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 8,
+  },
+  fabIcon: {
+    fontSize: 28,
+    fontWeight: Typography.bold,
+    color: "#FFFFFF",
   },
 });

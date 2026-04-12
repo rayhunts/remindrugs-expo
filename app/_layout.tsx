@@ -1,22 +1,46 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
+import * as SplashScreen from "expo-splash-screen";
+import { initDatabase } from "@/services/database";
+import { setNotificationHandler, setupNotificationChannel } from "@/services/notification-service";
+import { ThemeProvider } from "@/contexts/theme-context";
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+SplashScreen.preventAutoHideAsync();
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+setNotificationHandler();
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  useEffect(() => {
+    async function init() {
+      try {
+        initDatabase();
+        await setupNotificationChannel();
+      } catch (error) {
+        console.error("App init error:", error);
+      } finally {
+        await SplashScreen.hideAsync();
+      }
+    }
+    init();
+  }, []);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
+    <ThemeProvider>
+      <Stack screenOptions={{ headerBackTitle: "Back" }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        <Stack.Screen
+          name="add-reminder"
+          options={{ presentation: "modal", title: "Add Reminder" }}
+        />
+        <Stack.Screen
+          name="edit-reminder/[id]"
+          options={{ title: "Edit Reminder" }}
+        />
+        <Stack.Screen
+          name="onboarding"
+          options={{ headerShown: false }}
+        />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
