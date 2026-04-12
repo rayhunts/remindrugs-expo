@@ -1,5 +1,5 @@
-import { useCallback, useMemo } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { useCallback, useMemo, useState } from "react";
+import { View, Text, Pressable, StyleSheet, RefreshControl } from "react-native";
 import { router } from "expo-router";
 import { FlashList } from "@shopify/flash-list";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -25,8 +25,9 @@ function getGreeting(): { text: string; icon: string } {
 export default function TodayScreen() {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
-  const { todayReminders, loading: remindersLoading } = useReminders();
-  const { markTaken, getLogsForDate } = useAdherence();
+  const { todayReminders, loading: remindersLoading, refreshReminders } = useReminders();
+  const { markTaken, getLogsForDate, refreshLogs } = useAdherence();
+  const [refreshing, setRefreshing] = useState(false);
 
   const greeting = useMemo(() => getGreeting(), []);
   const todayStr = useMemo(
@@ -51,6 +52,13 @@ export default function TodayScreen() {
     [markTaken],
   );
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    refreshReminders();
+    refreshLogs();
+    setRefreshing(false);
+  }, [refreshReminders, refreshLogs]);
+
   const sortedReminders = useMemo(
     () =>
       [...todayReminders].sort((a, b) => {
@@ -68,6 +76,13 @@ export default function TodayScreen() {
       <FlashList
         data={sortedReminders}
         keyExtractor={(item) => item.id}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
         ListHeaderComponent={
           <View style={styles.header}>
             {/* Greeting */}

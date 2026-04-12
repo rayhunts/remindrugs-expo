@@ -1,5 +1,5 @@
-import { useCallback, useMemo } from "react";
-import { View, Text, Pressable, StyleSheet, Alert } from "react-native";
+import { useCallback, useMemo, useState } from "react";
+import { View, Text, Pressable, StyleSheet, Alert, RefreshControl } from "react-native";
 import { router } from "expo-router";
 import { FlashList } from "@shopify/flash-list";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -123,6 +123,13 @@ export default function RemindersScreen() {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
   const { reminders, toggleActive, deleteReminder, refreshReminders } = useReminders();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    refreshReminders();
+    setRefreshing(false);
+  }, [refreshReminders]);
 
   const activeReminders = useMemo(
     () => reminders.filter((r) => r.isActive),
@@ -209,6 +216,13 @@ export default function RemindersScreen() {
       <FlashList
         data={allItems}
         keyExtractor={(item) => item.id}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
         ListHeaderComponent={
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.textPrimary }]}>

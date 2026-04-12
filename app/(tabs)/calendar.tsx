@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet, RefreshControl, ScrollView } from "react-native";
 import { Calendar, DateData } from "react-native-calendars";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getColors } from "@/constants/colors";
@@ -17,7 +17,14 @@ export default function CalendarScreen() {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
   const { reminders } = useReminders();
-  const { getMonthlyStats, getMarkedDates, getLogsForDate, markTaken, markMissed, markSkipped } = useAdherence();
+  const { getMonthlyStats, getMarkedDates, getLogsForDate, markTaken, markMissed, markSkipped, refreshLogs } = useAdherence();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    refreshLogs();
+    setRefreshing(false);
+  }, [refreshLogs]);
 
   const now = new Date();
   const [selectedDate, setSelectedDate] = useState(toDateString(now));
@@ -63,6 +70,15 @@ export default function CalendarScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={["top"]}
     >
+      <ScrollView
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      >
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>
           Calendar
@@ -116,8 +132,16 @@ export default function CalendarScreen() {
           textDisabledColor: colors.textTertiary,
           monthTextColor: colors.textPrimary,
           arrowColor: colors.primary,
+          'stylesheet.calendar.header': {
+            headerContainer: {
+              backgroundColor: colors.background,
+            },
+            dayHeader: {
+              backgroundColor: colors.background,
+            },
+          },
         }}
-        style={styles.calendar}
+        style={[styles.calendar, { backgroundColor: colors.background }]}
       />
 
       {/* Day Detail */}
@@ -222,6 +246,7 @@ export default function CalendarScreen() {
           })
         )}
       </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

@@ -114,6 +114,7 @@ export default function AddReminderScreen() {
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    router.back();
   }, [name, hour, minute, days, drugs, addReminder]);
 
   const isValid = useMemo(() => {
