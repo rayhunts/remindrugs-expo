@@ -27,7 +27,6 @@ export interface Drug {
 export interface Reminder {
   id: string;
   name: string;
-  drugs: Drug[];
   hour: number;
   minute: number;
   days: Weekday[];
@@ -36,4 +35,9 @@ export interface Reminder {
   startDate?: string;
   endDate?: string;
   createdAt: number;
+}
+
+export interface ReminderDrug {
+  reminderId: string;
+  drugId: string;
 }
