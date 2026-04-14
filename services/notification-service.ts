@@ -21,7 +21,7 @@ export async function setupNotificationChannel(): Promise<void> {
       name: "Medication Reminders",
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
-      sound: true,
+      sound: "pill_bottle_shake.mp3",
     });
   }
 
@@ -51,16 +51,15 @@ async function scheduleForDay(reminder: Reminder, drugs: Drug[], day: Weekday): 
     content: {
       title: reminder.name,
       body: buildNotificationBody(drugs),
-      sound: true,
+      sound: "pill_bottle_shake.mp3",
       data: { reminderId: reminder.id },
       categoryIdentifier: "reminder-actions",
     },
     trigger: {
-      type: SchedulableTriggerInputTypes.CALENDAR,
+      type: SchedulableTriggerInputTypes.WEEKLY,
       weekday: toExpoWeekday(day),
       hour: reminder.hour,
       minute: reminder.minute,
-      repeats: true,
       channelId: "remindrugs-channel",
     },
   });
@@ -92,7 +91,7 @@ export async function scheduleSnooze(reminder: Reminder, drugs: Drug[]): Promise
     content: {
       title: `Snoozed: ${reminder.name}`,
       body: buildNotificationBody(drugs),
-      sound: true,
+      sound: "pill_bottle_shake.mp3",
       data: { reminderId: reminder.id, type: "snooze" },
       categoryIdentifier: "reminder-actions",
     },
