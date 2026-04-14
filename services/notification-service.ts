@@ -56,10 +56,11 @@ async function scheduleForDay(reminder: Reminder, drugs: Drug[], day: Weekday): 
       categoryIdentifier: "reminder-actions",
     },
     trigger: {
-      type: SchedulableTriggerInputTypes.WEEKLY,
+      type: SchedulableTriggerInputTypes.CALENDAR,
       weekday: toExpoWeekday(day),
       hour: reminder.hour,
       minute: reminder.minute,
+      repeats: true,
       channelId: "remindrugs-channel",
     },
   });
