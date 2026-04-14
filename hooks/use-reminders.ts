@@ -6,13 +6,19 @@ import {
   insertReminder,
   toggleReminderActive as dbToggleActive,
   updateReminder as dbUpdateReminder,
+  getDrugsForReminder,
+  setReminderDrugs,
 } from "@/services/database";
 import { reminderEvents } from "@/services/event-bus";
-import type { Reminder, Weekday } from "@/types/reminder";
+import type { Drug, Reminder, Weekday } from "@/types/reminder";
 import { toDateString, generateId } from "@/utils/date-helpers";
 
+export interface ReminderWithDrugs extends Reminder {
+  drugs: Drug[];
+}
+
 export function useReminders() {
-  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [reminders, setReminders] = useState<ReminderWithDrugs[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,8 +26,12 @@ export function useReminders() {
     try {
       setError(null);
       const all = getAllReminders();
-      setReminders(all);
-    } catch (e) {
+      const withDrugs: ReminderWithDrugs[] = all.map((r) => ({
+        ...r,
+        drugs: getDrugsForReminder(r.id),
+      }));
+      setReminders(withDrugs);
+    } catch {
       setError("Failed to load reminders.");
     } finally {
       setLoading(false);
@@ -48,14 +58,21 @@ export function useReminders() {
   });
 
   const addReminder = useCallback(
-    async (data: Omit<Reminder, "id" | "notificationIds" | "createdAt">) => {
+    async (data: Omit<Reminder, "id" | "notificationIds" | "createdAt"> & { drugIds: string[] }) => {
       const reminder: Reminder = {
-        ...data,
         id: generateId(),
+        name: data.name,
+        hour: data.hour,
+        minute: data.minute,
+        days: data.days,
+        isActive: data.isActive,
         notificationIds: [],
+        startDate: data.startDate,
+        endDate: data.endDate,
         createdAt: Date.now(),
       };
       insertReminder(reminder);
+      setReminderDrugs(reminder.id, data.drugIds);
       reminderEvents.emit();
       return reminder;
     },
@@ -63,8 +80,9 @@ export function useReminders() {
   );
 
   const update = useCallback(
-    async (reminder: Reminder) => {
+    async (reminder: Reminder, drugIds: string[]) => {
       dbUpdateReminder(reminder);
+      setReminderDrugs(reminder.id, drugIds);
       reminderEvents.emit();
     },
     [],
@@ -86,8 +104,10 @@ export function useReminders() {
     [],
   );
 
-  const getById = useCallback((id: string) => {
-    return getReminderById(id);
+  const getById = useCallback((id: string): ReminderWithDrugs | null => {
+    const reminder = getReminderById(id);
+    if (!reminder) return null;
+    return { ...reminder, drugs: getDrugsForReminder(id) };
   }, []);
 
   return {
