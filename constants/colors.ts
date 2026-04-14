@@ -1,8 +1,8 @@
 export const Colors = {
-  // Primary — calm blue-purple (trust + health)
-  primary: "#5B6EF5",
-  primaryLight: "#EEF0FE",
-  primaryDark: "#3D52D5",
+  // Primary — rich forest green (medical, trustworthy)
+  primary: "#16A34A",
+  primaryLight: "#DCFCE7",
+  primaryDark: "#15803D",
 
   // Semantic
   success: "#22C55E",
@@ -14,23 +14,16 @@ export const Colors = {
   info: "#3B82F6",
   infoLight: "#EFF6FF",
 
-  // Health-specific
-  sleep: "#8B5CF6",
-  sleepLight: "#F5F3FF",
-  heartRate: "#F43F5E",
-  heartRateLight: "#FFF1F2",
-  steps: "#10B981",
-
   // Neutrals
-  background: "#F5F6FA",
+  background: "#F8FAF8",
   card: "#FFFFFF",
-  border: "#E5E7EB",
-  divider: "#F3F4F6",
+  border: "#E2E8F0",
+  divider: "#F1F5F9",
 
   // Text
-  textPrimary: "#111827",
-  textSecondary: "#6B7280",
-  textTertiary: "#9CA3AF",
+  textPrimary: "#0F172A",
+  textSecondary: "#475569",
+  textTertiary: "#94A3B8",
   textInverse: "#FFFFFF",
 
   // Drug form colors
@@ -45,9 +38,9 @@ export const Colors = {
 
   // Dark mode
   dark: {
-    background: "#0F172A",
-    card: "#1E293B",
-    border: "#334155",
+    background: "#0C1410",
+    card: "#1A2620",
+    border: "#2D3B34",
     textPrimary: "#F1F5F9",
     textSecondary: "#94A3B8",
   },
@@ -58,32 +51,32 @@ export type ColorScheme = "light" | "dark";
 export function getColors(scheme: ColorScheme) {
   return scheme === "dark"
     ? {
-        ...Colors.dark,
-        primary: Colors.primary,
-        primaryLight: Colors.primaryLight,
-        primaryDark: Colors.primaryDark,
-        success: Colors.success,
-        successLight: Colors.successLight,
-        warning: Colors.warning,
-        warningLight: Colors.warningLight,
-        danger: Colors.danger,
-        dangerLight: Colors.dangerLight,
-        info: Colors.info,
-        infoLight: Colors.infoLight,
-        sleep: Colors.sleep,
-        sleepLight: Colors.sleepLight,
-        heartRate: Colors.heartRate,
-        heartRateLight: Colors.heartRateLight,
-        steps: Colors.steps,
-        pill: Colors.pill,
-        divider: "#334155",
+        background: Colors.dark.background,
+        card: Colors.dark.card,
+        border: Colors.dark.border,
+        divider: "#1E2E26",
+        textPrimary: Colors.dark.textPrimary,
+        textSecondary: Colors.dark.textSecondary,
         textTertiary: "#64748B",
         textInverse: Colors.textInverse,
+        primary: "#22C55E",
+        primaryLight: "#14532D",
+        primaryDark: "#16A34A",
+        success: Colors.success,
+        successLight: "#14532D",
+        warning: "#FBBF24",
+        warningLight: "#422006",
+        danger: "#F87171",
+        dangerLight: "#450A0A",
+        info: "#60A5FA",
+        infoLight: "#172554",
+        pill: Colors.pill,
       }
     : {
         background: Colors.background,
         card: Colors.card,
         border: Colors.border,
+        divider: Colors.divider,
         textPrimary: Colors.textPrimary,
         textSecondary: Colors.textSecondary,
         textTertiary: Colors.textTertiary,
@@ -99,12 +92,6 @@ export function getColors(scheme: ColorScheme) {
         dangerLight: Colors.dangerLight,
         info: Colors.info,
         infoLight: Colors.infoLight,
-        sleep: Colors.sleep,
-        sleepLight: Colors.sleepLight,
-        heartRate: Colors.heartRate,
-        heartRateLight: Colors.heartRateLight,
-        steps: Colors.steps,
         pill: Colors.pill,
-        divider: Colors.divider,
       };
 }

@@ -24,7 +24,7 @@ export const Shadow = {
     elevation: 3,
   },
   fab: {
-    shadowColor: "#5B6EF5",
+    shadowColor: "#16A34A",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
