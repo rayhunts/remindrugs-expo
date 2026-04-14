@@ -22,9 +22,18 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Today",
+          title: "Home",
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="home" color={color} size={size} />
+            <MaterialCommunityIcons name="home-variant" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="medications"
+        options={{
+          title: "Medications",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="pill" color={color} size={size} />
           ),
         }}
       />
@@ -33,37 +42,7 @@ export default function TabLayout() {
         options={{
           title: "Calendar",
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons
-              name="calendar-month"
-              color={color}
-              size={size}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="reminders"
-        options={{
-          title: "Reminders",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons
-              name="medical-bag"
-              color={color}
-              size={size}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="health"
-        options={{
-          title: "Health",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons
-              name="heart-pulse"
-              color={color}
-              size={size}
-            />
+            <MaterialCommunityIcons name="calendar-month" color={color} size={size} />
           ),
         }}
       />
@@ -72,11 +51,7 @@ export default function TabLayout() {
         options={{
           title: "Settings",
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons
-              name="cog-outline"
-              color={color}
-              size={size}
-            />
+            <MaterialCommunityIcons name="cog-outline" color={color} size={size} />
           ),
         }}
       />
