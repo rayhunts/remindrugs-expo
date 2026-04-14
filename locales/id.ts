@@ -123,7 +123,7 @@ const id = {
     medications: "OBAT",
     medicationSelected: "{count} obat dipilih",
     medicationsSelected: "{count} obat dipilih",
-    addNewMedication: "+ Tambah Obat Baru",
+    addNewMedication: "Tambah Obat Baru",
     newMedication: "Obat Baru",
     medicationNamePlaceholder: "Nama obat",
     dosagePlaceholder: "Dosis (mis. 500mg)",

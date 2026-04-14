@@ -91,7 +91,7 @@ export default function MedicationsScreen() {
             title={t.medications.noMedications}
             message={t.medications.noMedicationsMessage}
             buttonLabel={t.medications.addMedication}
-            onPress={() => router.push("/add-reminder")}
+            onPress={() => router.push("/add-drug")}
           />
         }
         renderItem={({ item }) => {
@@ -116,7 +116,7 @@ export default function MedicationsScreen() {
       <Pressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          router.push("/add-reminder");
+          router.push("/add-drug");
         }}
         style={[styles.fab, Shadow.fab, { backgroundColor: colors.primary }]}
         accessibilityLabel="Add new medication"

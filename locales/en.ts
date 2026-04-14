@@ -121,7 +121,7 @@ const en = {
     medications: "MEDICATIONS",
     medicationSelected: "{count} medication selected",
     medicationsSelected: "{count} medications selected",
-    addNewMedication: "+ Add New Medication",
+    addNewMedication: "Add New Medication",
     newMedication: "New Medication",
     medicationNamePlaceholder: "Medication name",
     dosagePlaceholder: "Dosage (e.g. 500mg)",
