@@ -464,6 +464,15 @@ export function deleteLogByDrugAndDate(drugId: string, date: string): void {
   );
 }
 
+export function deleteLogByReminderDrugAndDate(reminderId: string, drugId: string, date: string): void {
+  db.runSync(
+    "DELETE FROM adherence_logs WHERE reminder_id = ? AND drug_id = ? AND date = ?",
+    reminderId,
+    drugId,
+    date,
+  );
+}
+
 export function clearAllData(): void {
   db.execSync("DELETE FROM adherence_logs");
   db.execSync("DELETE FROM reminder_drugs");
