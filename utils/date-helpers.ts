@@ -47,14 +47,13 @@ export function getAdherenceColor(taken: number, total: number): string {
 export function calculateStreak(logs: AdherenceLog[]): number {
   if (logs.length === 0) return 0;
 
-  const today = toDateString(new Date());
-  const logMap = new Map<string, Map<string, string>>();
+  const dateMap = new Map<string, { total: number; taken: number }>();
 
   for (const log of logs) {
-    if (!logMap.has(log.date)) {
-      logMap.set(log.date, new Map());
-    }
-    logMap.get(log.date)!.set(log.reminderId, log.status);
+    const existing = dateMap.get(log.date) ?? { total: 0, taken: 0 };
+    existing.total++;
+    if (log.status === "taken") existing.taken++;
+    dateMap.set(log.date, existing);
   }
 
   let streak = 0;
@@ -62,11 +61,10 @@ export function calculateStreak(logs: AdherenceLog[]): number {
 
   for (let i = 0; i < 365; i++) {
     const dateStr = toDateString(current);
-    const dayLogs = logMap.get(dateStr);
+    const dayData = dateMap.get(dateStr);
 
-    if (dayLogs && dayLogs.size > 0) {
-      const allTaken = Array.from(dayLogs.values()).every((s) => s === "taken");
-      if (!allTaken) break;
+    if (dayData && dayData.total > 0) {
+      if (dayData.taken < dayData.total) break;
       streak++;
     }
     current.setDate(current.getDate() - 1);
