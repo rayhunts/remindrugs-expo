@@ -8,6 +8,7 @@ import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { requestNotificationPermissions } from "@/services/notification-service";
+import { setSetting } from "@/services/settings-service";
 
 const SCREENS = [
   {
@@ -19,18 +20,18 @@ const SCREENS = [
     skipText: "Skip",
   },
   {
-    icon: "cellphone",
-    title: "Health &\nSmartwatch",
+    icon: "calendar-check",
+    title: "Track Your\nAdherence",
     description:
-      "Optionally link Apple Health or Google Health Connect to see how your sleep and heart rate relate to your meds.",
-    buttonText: "Connect Later",
-    skipText: "Skip for now",
+      "See your medication history on a calendar. Track streaks, view monthly stats, and retroactively log doses.",
+    buttonText: "Next",
+    skipText: "Skip",
   },
   {
     icon: "bell-outline",
     title: "Never Miss\na Dose",
     description:
-      "Remindrugs sends a gentle reminder at exactly the right time, every day.",
+      "Remindrugs sends a gentle reminder at exactly the right time, every day. You can even snooze for 15 minutes.",
     buttonText: "Enable Reminders",
     skipText: "Maybe later",
   },
@@ -48,13 +49,14 @@ export default function OnboardingScreen() {
   const handleNext = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    if (step === 2) {
+    if (step === SCREENS.length - 1) {
       // Last step — request notifications
       try {
         await requestNotificationPermissions();
       } catch {
         // ignore
       }
+      setSetting("onboarded", "true");
       router.replace("/(tabs)");
       return;
     }
@@ -63,7 +65,8 @@ export default function OnboardingScreen() {
   }, [step, router]);
 
   const handleSkip = useCallback(() => {
-    if (step === 2) {
+    if (step === SCREENS.length - 1) {
+      setSetting("onboarded", "true");
       router.replace("/(tabs)");
       return;
     }
@@ -74,11 +77,18 @@ export default function OnboardingScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Content */}
       <View style={styles.content}>
-        <MaterialCommunityIcons
-          name={screen.icon}
-          size={72}
-          color={colors.primary}
-        />
+        <View
+          style={[
+            styles.iconWrap,
+            { backgroundColor: colors.primaryLight },
+          ]}
+        >
+          <MaterialCommunityIcons
+            name={screen.icon as any}
+            size={72}
+            color={colors.primary}
+          />
+        </View>
         <Text style={[styles.title, { color: colors.textPrimary }]}>
           {screen.title}
         </Text>
@@ -102,6 +112,11 @@ export default function OnboardingScreen() {
           />
         ))}
       </View>
+
+      {/* Step indicator */}
+      <Text style={[styles.stepText, { color: colors.textTertiary }]}>
+        {step + 1} of {SCREENS.length}
+      </Text>
 
       {/* Buttons */}
       <View style={styles.buttons}>
@@ -132,9 +147,14 @@ const styles = StyleSheet.create({
   },
   content: {
     alignItems: "center",
+    paddingTop: Spacing.xl,
   },
-  emoji: {
-    fontSize: 72,
+  iconWrap: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: Spacing.xl,
   },
   title: {
@@ -153,11 +173,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     gap: Spacing.sm,
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.sm,
   },
   dot: {
     height: 8,
     borderRadius: 4,
+  },
+  stepText: {
+    ...Typography.xs,
+    textAlign: "center",
+    marginBottom: Spacing.lg,
   },
   buttons: {
     gap: Spacing.sm,

@@ -13,6 +13,7 @@ import { getFrequencyLabel, getDayAbbreviations } from "@/utils/date-helpers";
 interface ReminderCardProps {
   reminder: Reminder;
   isTaken: boolean;
+  isSkipped?: boolean;
   onMarkTaken: () => void;
   onLongPress?: () => void;
 }
@@ -20,6 +21,7 @@ interface ReminderCardProps {
 export function ReminderCard({
   reminder,
   isTaken,
+  isSkipped = false,
   onMarkTaken,
   onLongPress,
 }: ReminderCardProps) {
@@ -37,7 +39,7 @@ export function ReminderCard({
   const displayedDrugs = reminder.drugs.slice(0, 3);
   const moreCount = reminder.drugs.length - 3;
 
-  const stripeColor = isTaken ? colors.success : colors.primary;
+  const stripeColor = isTaken ? colors.success : isSkipped ? colors.textTertiary : colors.primary;
 
   return (
     <Pressable
@@ -45,8 +47,13 @@ export function ReminderCard({
       style={[
         styles.card,
         {
-          backgroundColor: isTaken ? colors.successLight : colors.card,
+          backgroundColor: isTaken
+            ? colors.successLight
+            : isSkipped
+              ? colors.background
+              : colors.card,
           borderColor: colors.border,
+          opacity: isTaken || isSkipped ? 0.8 : 1,
         },
       ]}
     >
@@ -93,7 +100,7 @@ export function ReminderCard({
         </View>
 
         {/* Mark as taken */}
-        {!isTaken && (
+        {!isTaken && !isSkipped && (
           <Pressable
             onPress={handleMarkTaken}
             style={[
@@ -117,6 +124,19 @@ export function ReminderCard({
           >
             <Text style={[styles.takenBadgeText, { color: colors.success }]}>
               ✓ Taken
+            </Text>
+          </View>
+        )}
+
+        {isSkipped && !isTaken && (
+          <View
+            style={[
+              styles.takenBadge,
+              { backgroundColor: colors.divider },
+            ]}
+          >
+            <Text style={[styles.takenBadgeText, { color: colors.textTertiary }]}>
+              — Skipped
             </Text>
           </View>
         )}

@@ -162,7 +162,7 @@ export function DrugFormRow({
             >
               <View style={styles.formChipContent}>
                 <MaterialCommunityIcons
-                  name={form.icon}
+                  name={form.icon as any}
                   size={14}
                   color={
                     selected
