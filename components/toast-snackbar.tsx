@@ -12,39 +12,56 @@ import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
+type ToastVariant = "success" | "error" | "info";
+
 interface ToastSnackbarProps {
   visible: boolean;
   message: string;
+  variant?: ToastVariant;
   actionLabel?: string;
   onAction?: () => void;
   onDismiss?: () => void;
   duration?: number;
 }
 
+const VARIANT_CONFIG: Record<
+  ToastVariant,
+  { icon: string; colorKey: "success" | "danger" | "info"; lightKey: "successLight" | "dangerLight" | "infoLight" }
+> = {
+  success: { icon: "check-circle", colorKey: "success", lightKey: "successLight" },
+  error: { icon: "alert-circle", colorKey: "danger", lightKey: "dangerLight" },
+  info: { icon: "information", colorKey: "info", lightKey: "infoLight" },
+};
+
 export function ToastSnackbar({
   visible,
   message,
+  variant = "success",
   actionLabel = "Undo",
   onAction,
   onDismiss,
-  duration = 5000,
+  duration = 4000,
 }: ToastSnackbarProps) {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
-  const translateY = useRef(new Animated.Value(100)).current;
+  const translateY = useRef(new Animated.Value(80)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const config = VARIANT_CONFIG[variant];
+  const variantColor = colors[config.colorKey];
+  const variantBg = colors[config.lightKey];
 
   const show = useCallback(() => {
     Animated.parallel([
-      Animated.timing(translateY, {
+      Animated.spring(translateY, {
         toValue: 0,
-        duration: 250,
+        tension: 80,
+        friction: 12,
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 250,
+        duration: 200,
         useNativeDriver: true,
       }),
     ]).start();
@@ -58,13 +75,13 @@ export function ToastSnackbar({
   const hide = useCallback(() => {
     Animated.parallel([
       Animated.timing(translateY, {
-        toValue: 100,
-        duration: 200,
+        toValue: 80,
+        duration: 180,
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 200,
+        duration: 150,
         useNativeDriver: true,
       }),
     ]).start(() => {
@@ -94,7 +111,6 @@ export function ToastSnackbar({
       style={[
         styles.container,
         {
-          backgroundColor: colors.card,
           transform: [{ translateY }],
           opacity,
         },
@@ -105,29 +121,34 @@ export function ToastSnackbar({
         style={[
           styles.inner,
           {
-            borderColor: colors.border,
-            shadowColor: "#000",
+            backgroundColor: variantBg,
+            shadowColor: variantColor,
           },
         ]}
       >
-        <MaterialCommunityIcons
-          name="check-circle"
-          size={20}
-          color={colors.success}
-        />
+        <View style={[styles.iconWrap, { backgroundColor: `${variantColor}20` }]}>
+          <MaterialCommunityIcons
+            name={config.icon as any}
+            size={18}
+            color={variantColor}
+          />
+        </View>
         <Text
           style={[styles.message, { color: colors.textPrimary }]}
-          numberOfLines={1}
+          numberOfLines={2}
         >
           {message}
         </Text>
         {onAction && (
           <Pressable
             onPress={handleAction}
-            style={styles.actionButton}
+            style={({ pressed }) => [
+              styles.actionButton,
+              { backgroundColor: `${variantColor}18`, opacity: pressed ? 0.7 : 1 },
+            ]}
             accessibilityLabel={actionLabel}
           >
-            <Text style={[styles.actionText, { color: colors.primary }]}>
+            <Text style={[styles.actionText, { color: variantColor }]}>
               {actionLabel}
             </Text>
           </Pressable>
@@ -140,22 +161,28 @@ export function ToastSnackbar({
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    bottom: 100,
+    bottom: 90,
     left: Spacing.md,
     right: Spacing.md,
   },
   inner: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
     borderRadius: Radius.md,
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.sm + 2,
     paddingHorizontal: Spacing.md,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 6,
     gap: Spacing.sm,
+  },
+  iconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
   },
   message: {
     ...Typography.sm,
@@ -163,11 +190,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   actionButton: {
-    paddingVertical: Spacing.xs,
+    paddingVertical: 4,
     paddingHorizontal: Spacing.sm,
+    borderRadius: Radius.sm,
   },
   actionText: {
-    ...Typography.sm,
+    ...Typography.xs,
     fontWeight: Typography.semibold,
   },
 });
