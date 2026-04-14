@@ -1,24 +1,150 @@
 import { useCallback, useMemo, useState } from "react";
-import { View, Text, Pressable, StyleSheet, RefreshControl, ScrollView } from "react-native";
-import { Calendar, DateData } from "react-native-calendars";
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  RefreshControl,
+  StyleSheet,
+  Alert,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Calendar, type DateData } from "react-native-calendars";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { getColors } from "@/constants/colors";
 import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useReminders } from "@/hooks/use-reminders";
 import { useAdherence } from "@/hooks/use-adherence";
-import { formatDateLong, isWithinLast7Days, toDateString } from "@/utils/date-helpers";
-import { formatTime } from "@/utils/date-helpers";
+import { useReminders } from "@/hooks/use-reminders";
+import {
+  getMonthName,
+  toDateString,
+  isWithinLast7Days,
+  isToday,
+  formatTime,
+} from "@/utils/date-helpers";
 import type { AdherenceLog } from "@/types/adherence";
 import type { Reminder } from "@/types/reminder";
+
+function StatusBadge({
+  status,
+  colors,
+}: {
+  status: string;
+  colors: ReturnType<typeof getColors>;
+}) {
+  const config = {
+    taken: {
+      color: colors.success,
+      bg: colors.successLight,
+      label: "Taken",
+      icon: "check-circle",
+    },
+    missed: {
+      color: colors.danger,
+      bg: colors.dangerLight,
+      label: "Missed",
+      icon: "close-circle",
+    },
+    skipped: {
+      color: colors.textTertiary,
+      bg: colors.divider,
+      label: "Skipped",
+      icon: "minus-circle",
+    },
+  }[status] ?? {
+    color: colors.textTertiary,
+    bg: colors.divider,
+    label: status,
+    icon: "help-circle",
+  };
+
+  return (
+    <View style={[styles.statusBadge, { backgroundColor: config.bg }]}>
+      <MaterialCommunityIcons
+        name={config.icon as any}
+        size={12}
+        color={config.color}
+      />
+      <Text style={[styles.statusLabel, { color: config.color }]}>
+        {config.label}
+      </Text>
+    </View>
+  );
+}
 
 export default function CalendarScreen() {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
+  const {
+    getMonthlyStats,
+    getMarkedDates,
+    getLogsForDate,
+    markTaken,
+    markMissed,
+    markSkipped,
+    refreshLogs,
+  } = useAdherence();
   const { reminders } = useReminders();
-  const { getMonthlyStats, getMarkedDates, getLogsForDate, markTaken, markMissed, markSkipped, refreshLogs } = useAdherence();
+
+  const today = new Date();
+  const [currentMonth, setCurrentMonth] = useState({
+    year: today.getFullYear(),
+    month: today.getMonth(),
+  });
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  const stats = useMemo(
+    () => getMonthlyStats(currentMonth.year, currentMonth.month),
+    [getMonthlyStats, currentMonth],
+  );
+
+  const markedDates = useMemo(
+    () => getMarkedDates(currentMonth.year, currentMonth.month, reminders),
+    [getMarkedDates, currentMonth, reminders],
+  );
+
+  const selectedLogs = useMemo(
+    () => (selectedDate ? getLogsForDate(selectedDate) : []),
+    [selectedDate, getLogsForDate],
+  );
+
+  // Get reminders scheduled for the selected date
+  const selectedDateReminders = useMemo(() => {
+    if (!selectedDate) return [];
+    const d = new Date(selectedDate + "T00:00:00");
+    const weekday = d.getDay();
+    return reminders.filter((r) => {
+      if (!r.isActive) return false;
+      if (!r.days.includes(weekday as 0 | 1 | 2 | 3 | 4 | 5 | 6)) return false;
+      if (r.startDate && selectedDate < r.startDate) return false;
+      if (r.endDate && selectedDate > r.endDate) return false;
+      return true;
+    });
+  }, [selectedDate, reminders]);
+
+  const selectedLogMap = useMemo(() => {
+    const map = new Map<string, AdherenceLog>();
+    for (const log of selectedLogs) {
+      map.set(log.reminderId, log);
+    }
+    return map;
+  }, [selectedLogs]);
+
+  const isPastAndEditable = useMemo(() => {
+    if (!selectedDate) return false;
+    if (isToday(selectedDate)) return true;
+    return isWithinLast7Days(selectedDate);
+  }, [selectedDate]);
+
+  const isFuture = useMemo(() => {
+    if (!selectedDate) return false;
+    const todayStr = toDateString(new Date());
+    return selectedDate > todayStr;
+  }, [selectedDate]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -26,43 +152,100 @@ export default function CalendarScreen() {
     setRefreshing(false);
   }, [refreshLogs]);
 
-  const now = new Date();
-  const [selectedDate, setSelectedDate] = useState(toDateString(now));
-
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const stats = useMemo(() => getMonthlyStats(year, month), [getMonthlyStats, year, month]);
-  const markedDates = useMemo(
-    () => getMarkedDates(year, month, reminders),
-    [getMarkedDates, year, month, reminders],
-  );
-
-  const selectedLogs = useMemo(
-    () => getLogsForDate(selectedDate),
-    [getLogsForDate, selectedDate],
-  );
-
-  const selectedReminders = useMemo(
-    () => reminders.filter((r) => {
-      const dayOfWeek = new Date(selectedDate + "T00:00:00").getDay();
-      return r.days.includes(dayOfWeek as 0 | 1 | 2 | 3 | 4 | 5 | 6);
-    }),
-    [reminders, selectedDate],
-  );
-
-  const todayStr = toDateString(now);
-  const canRetroactivelyLog = isWithinLast7Days(selectedDate) && selectedDate <= todayStr;
-
-  const handleDayPress = useCallback((day: DateData) => {
-    setSelectedDate(day.dateString);
+  const onMonthChange = useCallback((month: DateData) => {
+    setCurrentMonth({ year: month.year, month: month.month - 1 });
+    setSelectedDate(null);
   }, []);
 
-  const getStatusForReminder = useCallback(
-    (reminderId: string): AdherenceLog["status"] | null => {
-      const log = selectedLogs.find((l) => l.reminderId === reminderId);
-      return log ? log.status : null;
+  const onDayPress = useCallback(
+    (day: DateData) => {
+      const dateStr = toDateString(new Date(day.year, day.month - 1, day.day));
+      setSelectedDate(dateStr === selectedDate ? null : dateStr);
     },
-    [selectedLogs],
+    [selectedDate],
+  );
+
+  const handleMarkDay = useCallback(
+    (reminderId: string, status: "taken" | "missed" | "skipped") => {
+      if (!selectedDate) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (status === "taken") markTaken(reminderId, selectedDate);
+      else if (status === "missed") markMissed(reminderId, selectedDate);
+      else markSkipped(reminderId, selectedDate);
+    },
+    [selectedDate, markTaken, markMissed, markSkipped],
+  );
+
+  const selectedMarked = useMemo(() => {
+    if (!selectedDate) return markedDates;
+    return {
+      ...markedDates,
+      [selectedDate]: {
+        ...(markedDates[selectedDate] ?? { dots: [] }),
+        selected: true,
+        selectedColor: colors.primary,
+      },
+    };
+  }, [selectedDate, markedDates, colors.primary]);
+
+  const calendarTheme = useMemo(
+    () => ({
+      backgroundColor: colors.card,
+      calendarBackground: colors.card,
+      textSectionTitleColor: colors.textSecondary,
+      selectedDayBackgroundColor: colors.primary,
+      selectedDayTextColor: colors.textInverse,
+      todayTextColor: colors.primary,
+      dayTextColor: colors.textPrimary,
+      textDisabledColor: colors.textTertiary,
+      monthTextColor: colors.textPrimary,
+      arrowColor: colors.primary,
+      "stylesheet.calendar.header": {
+        dayHeader: {
+          ...Typography.xs,
+          fontWeight: Typography.semibold as unknown as number,
+          color: colors.textTertiary,
+          paddingBottom: Spacing.sm,
+        },
+      },
+      "stylesheet.day.basic": {
+        base: {
+          width: 32,
+          height: 32,
+          alignItems: "center" as unknown as string,
+          justifyContent: "center" as unknown as string,
+        },
+        text: {
+          ...Typography.sm,
+          color: colors.textPrimary,
+          textAlign: "center" as unknown as string,
+          lineHeight: 32,
+        },
+        today: {
+          backgroundColor: colors.primaryLight,
+          borderRadius: Radius.full,
+        },
+        todayText: {
+          ...Typography.sm,
+          fontWeight: Typography.bold as unknown as number,
+          color: colors.primary,
+          textAlign: "center" as unknown as string,
+          lineHeight: 32,
+        },
+        selected: {
+          backgroundColor: colors.primary,
+          borderRadius: Radius.full,
+        },
+        selectedText: {
+          ...Typography.sm,
+          fontWeight: Typography.bold as unknown as number,
+          color: colors.textInverse,
+          textAlign: "center" as unknown as string,
+          lineHeight: 32,
+        },
+      },
+    }),
+    [colors],
   );
 
   return (
@@ -71,6 +254,7 @@ export default function CalendarScreen() {
       edges={["top"]}
     >
       <ScrollView
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -78,174 +262,276 @@ export default function CalendarScreen() {
             tintColor={colors.primary}
           />
         }
+        showsVerticalScrollIndicator={false}
       >
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>
-          Calendar
-        </Text>
-      </View>
-
-      {/* Stats Row */}
-      <View style={[styles.statsRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: colors.primary }]}>{stats.adherencePercent}%</Text>
-          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Adherence</Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+            {getMonthName(currentMonth.year, currentMonth.month)}
+          </Text>
         </View>
-        <View style={[styles.statDivider, { backgroundColor: colors.divider }]} />
-        <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: colors.warning }]}>{stats.streak}</Text>
-          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Day Streak</Text>
-        </View>
-        <View style={[styles.statDivider, { backgroundColor: colors.divider }]} />
-        <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: colors.danger }]}>{stats.missedDoses}</Text>
-          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Missed</Text>
-        </View>
-      </View>
 
-      {/* Calendar */}
-      <Calendar
-        current={todayStr}
-        markingType="multi-dot"
-        markedDates={{
-          ...markedDates,
-          [todayStr]: {
-            ...(markedDates[todayStr] || { dots: [] }),
-            selected: true,
-            selectedColor: colors.primary,
-          },
-          [selectedDate]: {
-            ...(markedDates[selectedDate] || { dots: [] }),
-            selected: true,
-            selectedColor: selectedDate === todayStr ? colors.primary : colors.info,
-          },
-        }}
-        onDayPress={handleDayPress}
-        theme={{
-          backgroundColor: colors.background,
-          calendarBackground: colors.background,
-          textSectionTitleColor: colors.textSecondary,
-          selectedDayBackgroundColor: colors.primary,
-          selectedDayTextColor: colors.textInverse,
-          todayTextColor: colors.primary,
-          dayTextColor: colors.textPrimary,
-          textDisabledColor: colors.textTertiary,
-          monthTextColor: colors.textPrimary,
-          arrowColor: colors.primary,
-          'stylesheet.calendar.header': {
-            headerContainer: {
-              backgroundColor: colors.background,
-            },
-            dayHeader: {
-              backgroundColor: colors.background,
-            },
-          },
-        }}
-        style={[styles.calendar, { backgroundColor: colors.background }]}
-      />
-
-      {/* Day Detail */}
-      <View style={styles.dayDetail}>
-        <Text style={[styles.dayTitle, { color: colors.textPrimary }]}>
-          {formatDateLong(new Date(selectedDate + "T00:00:00"))}
-        </Text>
-
-        {selectedReminders.length === 0 ? (
-          <View style={styles.emptyDay}>
-            <Text style={[styles.emptyDayText, { color: colors.textTertiary }]}>
-              No medications scheduled
+        {/* Stats Row */}
+        <View style={styles.statsRow}>
+          <View
+            style={[
+              styles.statCard,
+              {
+                backgroundColor: colors.primaryLight,
+                borderColor: colors.primary,
+              },
+            ]}
+          >
+            <Text style={[styles.statValue, { color: colors.primary }]}>
+              {stats.adherencePercent}%
+            </Text>
+            <Text style={[styles.statLabel, { color: colors.primary }]}>
+              Adherence
             </Text>
           </View>
-        ) : (
-          selectedReminders.map((reminder) => {
-            const status = getStatusForReminder(reminder.id);
-            return (
+          <View
+            style={[
+              styles.statCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <View style={styles.statIconRow}>
+              <MaterialCommunityIcons
+                name="fire"
+                size={16}
+                color={colors.warning}
+              />
+              <Text style={[styles.statValue, { color: colors.textPrimary }]}>
+                {stats.streak}
+              </Text>
+            </View>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+              Day Streak
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.statCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <View style={styles.statIconRow}>
+              <MaterialCommunityIcons
+                name="close-circle-outline"
+                size={16}
+                color={colors.danger}
+              />
+              <Text style={[styles.statValue, { color: colors.textPrimary }]}>
+                {stats.missedDoses}
+              </Text>
+            </View>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+              Missed
+            </Text>
+          </View>
+        </View>
+
+        {/* Calendar */}
+        <View
+          style={[
+            styles.calendarWrap,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Calendar
+            current={`${currentMonth.year}-${String(currentMonth.month + 1).padStart(2, "0")}-01`}
+            markingType="multi-dot"
+            markedDates={selectedMarked}
+            onMonthChange={onMonthChange}
+            onDayPress={onDayPress}
+            theme={calendarTheme}
+            enableSwipeMonths
+            renderArrow={(direction: "left" | "right") => (
+              <MaterialCommunityIcons
+                name={direction === "left" ? "chevron-left" : "chevron-right"}
+                size={24}
+                color={colors.primary}
+              />
+            )}
+          />
+        </View>
+
+        {/* Selected Day Detail */}
+        {selectedDate && (
+          <View style={styles.daySection}>
+            <Text
+              style={[styles.daySectionTitle, { color: colors.textPrimary }]}
+            >
+              {new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "short",
+                day: "numeric",
+              })}
+            </Text>
+
+            {isFuture ? (
               <View
-                key={reminder.id}
                 style={[
-                  styles.dayCard,
+                  styles.emptyDay,
                   { backgroundColor: colors.card, borderColor: colors.border },
                 ]}
               >
-                <View style={styles.dayCardHeader}>
-                  <View>
-                    <Text style={[styles.dayCardName, { color: colors.textPrimary }]}>
-                      {reminder.name}
-                    </Text>
-                    <Text style={[styles.dayCardTime, { color: colors.textSecondary }]}>
-                      {formatTime(reminder.hour, reminder.minute)} —{" "}
-                      {reminder.drugs.map((d) => `${d.name} ${d.dosage}`).join(", ")}
-                    </Text>
-                  </View>
-                  {status && (
+                <MaterialCommunityIcons
+                  name="calendar-clock"
+                  size={32}
+                  color={colors.textTertiary}
+                />
+                <Text style={[styles.emptyDayText, { color: colors.textTertiary }]}>
+                  No data yet for this day
+                </Text>
+              </View>
+            ) : selectedDateReminders.length === 0 && selectedLogs.length === 0 ? (
+              <View
+                style={[
+                  styles.emptyDay,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
+              >
+                <Text style={[styles.emptyDayText, { color: colors.textTertiary }]}>
+                  No medications scheduled for this day
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.logList}>
+                {selectedDateReminders.map((reminder) => {
+                  const log = selectedLogMap.get(reminder.id);
+                  const drugNames = reminder.drugs
+                    .slice(0, 2)
+                    .map((d) => d.name)
+                    .join(", ");
+                  const moreCount = reminder.drugs.length - 2;
+
+                  return (
                     <View
+                      key={reminder.id}
                       style={[
-                        styles.statusBadge,
-                        {
-                          backgroundColor:
-                            status === "taken"
-                              ? colors.successLight
-                              : status === "skipped"
-                                ? colors.warningLight
-                                : colors.dangerLight,
-                        },
+                        styles.logItem,
+                        { backgroundColor: colors.card, borderColor: colors.border },
                       ]}
                     >
-                      <Text
-                        style={{
-                          color:
-                            status === "taken"
+                      <View style={styles.logLeft}>
+                        <MaterialCommunityIcons
+                          name={
+                            log?.status === "taken"
+                              ? "check-circle"
+                              : log?.status === "missed"
+                                ? "close-circle"
+                                : log?.status === "skipped"
+                                  ? "minus-circle"
+                                  : "clock-outline"
+                          }
+                          size={20}
+                          color={
+                            log?.status === "taken"
                               ? colors.success
-                              : status === "skipped"
-                                ? colors.warning
-                                : colors.danger,
-                          ...Typography.xs,
-                          fontWeight: Typography.semibold,
-                        }}
-                      >
-                        {status === "taken"
-                          ? "✓ Taken"
-                          : status === "skipped"
-                            ? "— Skipped"
-                            : "✗ Missed"}
-                      </Text>
+                              : log?.status === "missed"
+                                ? colors.danger
+                                : log?.status === "skipped"
+                                  ? colors.textTertiary
+                                  : colors.primary
+                          }
+                        />
+                        <View style={styles.logInfo}>
+                          <Text style={[styles.logReminder, { color: colors.textPrimary }]}>
+                            {reminder.name}
+                          </Text>
+                          <Text style={[styles.logDrugs, { color: colors.textSecondary }]} numberOfLines={1}>
+                            {drugNames}
+                            {moreCount > 0 ? ` +${moreCount}` : ""}
+                          </Text>
+                          <Text style={[styles.logTime, { color: colors.textTertiary }]}>
+                            {formatTime(reminder.hour, reminder.minute)}
+                            {log?.takenAt
+                              ? ` · Taken at ${formatTime(new Date(log.takenAt).getHours(), new Date(log.takenAt).getMinutes())}`
+                              : ""}
+                          </Text>
+                        </View>
+                      </View>
+                      {log ? (
+                        <StatusBadge status={log.status} colors={colors} />
+                      ) : null}
                     </View>
-                  )}
-                </View>
+                  );
+                })}
 
-                {canRetroactivelyLog && !status && (
+                {/* Retroactive action buttons */}
+                {isPastAndEditable && (
                   <View style={styles.actionRow}>
                     <Pressable
-                      onPress={() => markTaken(reminder.id, selectedDate)}
+                      onPress={() => {
+                        const unlogged = selectedDateReminders.filter(
+                          (r) => !selectedLogMap.has(r.id),
+                        );
+                        if (unlogged.length === 0) {
+                          Alert.alert("All logged", "All reminders for this day already have a status.");
+                          return;
+                        }
+                        for (const r of unlogged) {
+                          handleMarkDay(r.id, "taken");
+                        }
+                      }}
                       style={[styles.actionBtn, { backgroundColor: colors.success }]}
                     >
+                      <MaterialCommunityIcons name="check" size={16} color={colors.textInverse} />
                       <Text style={[styles.actionBtnText, { color: colors.textInverse }]}>
-                        ✓ Taken
+                        All Taken
                       </Text>
                     </Pressable>
                     <Pressable
-                      onPress={() => markSkipped(reminder.id, selectedDate)}
-                      style={[styles.actionBtn, { backgroundColor: colors.warning }]}
-                    >
-                      <Text style={[styles.actionBtnText, { color: colors.textInverse }]}>
-                        — Skip
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => markMissed(reminder.id, selectedDate)}
+                      onPress={() => {
+                        const unlogged = selectedDateReminders.filter(
+                          (r) => !selectedLogMap.has(r.id),
+                        );
+                        if (unlogged.length === 0) {
+                          Alert.alert("All logged", "All reminders for this day already have a status.");
+                          return;
+                        }
+                        for (const r of unlogged) {
+                          handleMarkDay(r.id, "missed");
+                        }
+                      }}
                       style={[styles.actionBtn, { backgroundColor: colors.danger }]}
                     >
+                      <MaterialCommunityIcons name="close" size={16} color={colors.textInverse} />
                       <Text style={[styles.actionBtnText, { color: colors.textInverse }]}>
-                        ✗ Missed
+                        All Missed
                       </Text>
                     </Pressable>
                   </View>
                 )}
               </View>
-            );
-          })
+            )}
+          </View>
         )}
-      </View>
+
+        {/* Legend */}
+        <View style={styles.legendRow}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
+            <Text style={[styles.legendText, { color: colors.textSecondary }]}>All taken</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: colors.warning }]} />
+            <Text style={[styles.legendText, { color: colors.textSecondary }]}>Partial</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: colors.danger }]} />
+            <Text style={[styles.legendText, { color: colors.textSecondary }]}>Missed</Text>
+          </View>
+        </View>
+
+        <View style={styles.bottomSpace} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -253,80 +539,109 @@ export default function CalendarScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  scrollContent: { paddingHorizontal: Spacing.md },
   header: {
-    padding: Spacing.md,
-    paddingBottom: 0,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.md,
   },
-  title: {
-    ...Typography.lg,
+  headerTitle: {
+    ...Typography.xl,
     fontWeight: Typography.bold,
   },
   statsRow: {
     flexDirection: "row",
-    marginHorizontal: Spacing.md,
+    gap: Spacing.sm,
     marginBottom: Spacing.md,
-    padding: Spacing.md,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
   },
-  statItem: {
+  statCard: {
     flex: 1,
+    borderWidth: 1,
+    borderRadius: Radius.lg,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
     alignItems: "center",
   },
   statValue: {
-    ...Typography.xl,
+    ...Typography.lg,
     fontWeight: Typography.bold,
   },
   statLabel: {
     ...Typography.xs,
     marginTop: 2,
   },
-  statDivider: {
-    width: 1,
-    height: "70%",
+  statIconRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
   },
-  calendar: {
+  calendarWrap: {
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    overflow: "hidden",
     marginBottom: Spacing.md,
   },
-  dayDetail: {
-    paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing["2xl"],
+  daySection: {
+    marginBottom: Spacing.md,
   },
-  dayTitle: {
+  daySectionTitle: {
     ...Typography.md,
     fontWeight: Typography.semibold,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
+    paddingHorizontal: Spacing.xs,
   },
   emptyDay: {
-    padding: Spacing.xl,
-    alignItems: "center",
-  },
-  emptyDayText: {
-    ...Typography.base,
-  },
-  dayCard: {
     borderWidth: 1,
     borderRadius: Radius.lg,
-    padding: Spacing.md,
-    marginBottom: Spacing.sm,
+    padding: Spacing.lg,
+    alignItems: "center",
+    gap: Spacing.sm,
   },
-  dayCardHeader: {
+  emptyDayText: {
+    ...Typography.sm,
+  },
+  logList: {
+    gap: Spacing.sm,
+  },
+  logItem: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
   },
-  dayCardName: {
-    ...Typography.md,
-    fontWeight: Typography.semibold,
+  logLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    flex: 1,
   },
-  dayCardTime: {
+  logInfo: {
+    flex: 1,
+  },
+  logReminder: {
     ...Typography.sm,
+    fontWeight: Typography.medium,
+  },
+  logDrugs: {
+    ...Typography.xs,
+    marginTop: 2,
+  },
+  logTime: {
+    ...Typography.xs,
     marginTop: 2,
   },
   statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: 100,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+  },
+  statusLabel: {
+    ...Typography.xs,
+    fontWeight: Typography.semibold,
   },
   actionRow: {
     flexDirection: "row",
@@ -335,12 +650,35 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.xs,
     paddingVertical: Spacing.sm,
     borderRadius: Radius.md,
-    alignItems: "center",
   },
   actionBtnText: {
-    ...Typography.xs,
+    ...Typography.sm,
     fontWeight: Typography.semibold,
   },
+  legendRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: Spacing.lg,
+    paddingVertical: Spacing.sm,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendText: {
+    ...Typography.xs,
+  },
+  bottomSpace: { height: 100 },
 });
