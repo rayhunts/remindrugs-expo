@@ -1,5 +1,13 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+  runOnJS,
+} from "react-native-reanimated";
+import { useEffect, useCallback, useRef } from "react";
 import { getColors } from "@/constants/colors";
 import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
@@ -20,54 +28,86 @@ interface ActionSheetProps {
 export function ActionSheet({ options, onCancel }: ActionSheetProps) {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
+  const onCancelRef = useRef(onCancel);
+  onCancelRef.current = onCancel;
+
+  const overlayOpacity = useSharedValue(0);
+  const sheetTranslateY = useSharedValue(300);
+
+  useEffect(() => {
+    overlayOpacity.value = withTiming(1, { duration: 200, easing: Easing.out(Easing.quad) });
+    sheetTranslateY.value = withTiming(0, { duration: 250, easing: Easing.out(Easing.quad) });
+  }, [overlayOpacity, sheetTranslateY]);
+
+  const dismiss = useCallback(() => {
+    "worklet";
+    overlayOpacity.value = withTiming(0, { duration: 150 });
+    sheetTranslateY.value = withTiming(300, { duration: 200, easing: Easing.in(Easing.quad) }, () => {
+      runOnJS(onCancelRef.current)();
+    });
+  }, [overlayOpacity, sheetTranslateY]);
+
+  const handleCancel = useCallback(() => {
+    dismiss();
+  }, [dismiss]);
+
+  const handleOption = useCallback(
+    (option: ActionSheetOption) => {
+      option.onPress();
+      dismiss();
+    },
+    [dismiss],
+  );
+
+  const overlayAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: overlayOpacity.value,
+  }));
+
+  const sheetAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: sheetTranslateY.value }],
+  }));
 
   return (
-    <Pressable
-      style={styles.overlay}
-      onPress={onCancel}
-      accessibilityLabel="Close action sheet"
+    <Animated.View
+      style={[styles.overlay, overlayAnimatedStyle]}
+      onStartShouldSetResponder={() => true}
     >
-      <View
-        style={[styles.sheet, { backgroundColor: colors.card }]}
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onPress={handleCancel}
+        accessibilityLabel="Close action sheet"
+      />
+      <Animated.View
+        style={[styles.sheet, sheetAnimatedStyle, { backgroundColor: colors.card }]}
         onStartShouldSetResponder={() => true}
       >
         {/* Handle */}
-        <View
-          style={[styles.handle, { backgroundColor: colors.border }]}
-        />
+        <View style={[styles.handle, { backgroundColor: colors.border }]} />
 
         {/* Options */}
         {options.map((option, index) => (
           <Pressable
             key={index}
-            onPress={() => {
-              option.onPress();
-              onCancel();
-            }}
-            style={[
+            onPress={() => handleOption(option)}
+            style={({ pressed }) => [
               styles.option,
               index < options.length - 1 && {
                 borderBottomWidth: 1,
                 borderBottomColor: colors.border,
               },
+              { opacity: pressed ? 0.7 : 1 },
             ]}
             accessibilityLabel={option.label}
           >
             <MaterialCommunityIcons
               name={option.icon as any}
               size={22}
-              color={
-                option.destructive ? colors.danger : colors.textPrimary
-              }
+              color={option.destructive ? colors.danger : colors.textPrimary}
             />
             <Text
               style={[
                 styles.optionLabel,
-                {
-                  color: option.destructive
-                    ? colors.danger
-                    : colors.textPrimary,
-                },
+                { color: option.destructive ? colors.danger : colors.textPrimary },
               ]}
             >
               {option.label}
@@ -76,19 +116,22 @@ export function ActionSheet({ options, onCancel }: ActionSheetProps) {
         ))}
 
         {/* Cancel */}
-        <Pressable onPress={onCancel} style={styles.cancelButton}>
+        <Pressable
+          onPress={handleCancel}
+          style={({ pressed }) => [styles.cancelButton, { opacity: pressed ? 0.7 : 1 }]}
+        >
           <Text style={[styles.cancelText, { color: colors.textSecondary }]}>
             Cancel
           </Text>
         </Pressable>
-      </View>
-    </Pressable>
+      </Animated.View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     justifyContent: "flex-end",
     backgroundColor: "rgba(0, 0, 0, 0.4)",
   },

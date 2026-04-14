@@ -1,8 +1,14 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { View, Text, Pressable, StyleSheet, Dimensions } from "react-native";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
 import { getColors } from "@/constants/colors";
 import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
@@ -46,11 +52,25 @@ export default function OnboardingScreen() {
   const [step, setStep] = useState(0);
   const screen = SCREENS[step];
 
+  const contentOpacity = useSharedValue(1);
+  const contentTranslateX = useSharedValue(0);
+
+  useEffect(() => {
+    contentOpacity.value = 0;
+    contentTranslateX.value = 30;
+    contentOpacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.quad) });
+    contentTranslateX.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.quad) });
+  }, [step, contentOpacity, contentTranslateX]);
+
+  const contentAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: contentOpacity.value,
+    transform: [{ translateX: contentTranslateX.value }],
+  }));
+
   const handleNext = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     if (step === SCREENS.length - 1) {
-      // Last step — request notifications
       try {
         await requestNotificationPermissions();
       } catch {
@@ -76,7 +96,7 @@ export default function OnboardingScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Content */}
-      <View style={styles.content}>
+      <Animated.View style={[styles.content, contentAnimatedStyle]}>
         <View
           style={[
             styles.iconWrap,
@@ -95,7 +115,7 @@ export default function OnboardingScreen() {
         <Text style={[styles.description, { color: colors.textSecondary }]}>
           {screen.description}
         </Text>
-      </View>
+      </Animated.View>
 
       {/* Dots */}
       <View style={styles.dots}>
@@ -122,13 +142,22 @@ export default function OnboardingScreen() {
       <View style={styles.buttons}>
         <Pressable
           onPress={handleNext}
-          style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+          style={({ pressed }) => [
+            styles.primaryButton,
+            {
+              backgroundColor: colors.primary,
+              opacity: pressed ? 0.7 : 1,
+            },
+          ]}
         >
           <Text style={[styles.primaryButtonText, { color: colors.textInverse }]}>
             {screen.buttonText} →
           </Text>
         </Pressable>
-        <Pressable onPress={handleSkip} style={styles.skipButton}>
+        <Pressable
+          onPress={handleSkip}
+          style={({ pressed }) => [styles.skipButton, { opacity: pressed ? 0.7 : 1 }]}
+        >
           <Text style={[styles.skipText, { color: colors.textTertiary }]}>
             {screen.skipText}
           </Text>
