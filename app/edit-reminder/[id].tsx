@@ -43,6 +43,7 @@ export default function EditReminderScreen() {
   const [days, setDays] = useState<Weekday[]>([]);
   const [drugs, setDrugs] = useState<Drug[]>([]);
   const [originalReminder, setOriginalReminder] = useState<Reminder | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!id) return;
@@ -89,19 +90,16 @@ export default function EditReminderScreen() {
     if (!originalReminder) return;
 
     const trimmedName = name.trim();
-    if (!trimmedName) {
-      Alert.alert("Missing name", "Please enter a reminder name.");
-      return;
-    }
-    if (days.length === 0) {
-      Alert.alert("No days selected", "Please select at least one day.");
-      return;
-    }
+    const newErrors: Record<string, string> = {};
+    if (!trimmedName) newErrors.name = "Please enter a reminder name.";
+    if (days.length === 0) newErrors.days = "Please select at least one day.";
     const validDrugs = drugs.filter((d) => d.name.trim().length > 0);
-    if (validDrugs.length === 0) {
-      Alert.alert("No drugs", "Please add at least one drug with a name.");
+    if (validDrugs.length === 0) newErrors.drugs = "Please add at least one drug with a name.";
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
+    setErrors({});
 
     const updated: Reminder = {
       ...originalReminder,
@@ -204,14 +202,22 @@ export default function EditReminderScreen() {
               placeholder='e.g. "Morning Meds"'
               placeholderTextColor={colors.textTertiary}
               value={name}
-              onChangeText={setName}
+              onChangeText={(text) => {
+                setName(text);
+                if (errors.name) setErrors((e) => ({ ...e, name: "" }));
+              }}
               accessibilityLabel="Reminder name"
             />
+            {errors.name ? (
+              <Text style={[styles.errorText, { color: colors.danger }]}>
+                {errors.name}
+              </Text>
+            ) : null}
           </View>
 
           {/* Time */}
           <View style={styles.section}>
-            <TimePickerField hour={hour} minute={minute} onChange={setHour} />
+            <TimePickerField hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} />
           </View>
 
           {/* Days */}
@@ -222,6 +228,11 @@ export default function EditReminderScreen() {
                 <FrequencyBadge type={frequency} />
               </View>
             </View>
+            {errors.days ? (
+              <Text style={[styles.errorText, { color: colors.danger }]}>
+                {errors.days}
+              </Text>
+            ) : null}
           </View>
 
           {/* Drugs */}
@@ -247,6 +258,11 @@ export default function EditReminderScreen() {
                 + Add Another Drug
               </Text>
             </Pressable>
+            {errors.drugs ? (
+              <Text style={[styles.errorText, { color: colors.danger }]}>
+                {errors.drugs}
+              </Text>
+            ) : null}
           </View>
 
           {/* Save */}
@@ -292,6 +308,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     ...Typography.base,
+  },
+  errorText: {
+    ...Typography.xs,
+    marginTop: Spacing.xs,
   },
   frequencyRow: { gap: Spacing.sm },
   frequencyBadgeWrap: { alignItems: "flex-start" },
