@@ -16,4 +16,5 @@ class EventBus {
 }
 
 export const reminderEvents = new EventBus();
+export const drugEvents = new EventBus();
 export const adherenceEvents = new EventBus();
