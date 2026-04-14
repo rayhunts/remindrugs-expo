@@ -12,6 +12,7 @@ import {
 } from "@/services/notification-service";
 import { adherenceEvents } from "@/services/event-bus";
 import { ThemeProvider } from "@/contexts/theme-context";
+import { useThemeColor } from "@/hooks/use-theme-color";
 import { generateId, toDateString } from "@/utils/date-helpers";
 import { getSetting } from "@/services/settings-service";
 import { router } from "expo-router";
@@ -19,6 +20,12 @@ import { router } from "expo-router";
 SplashScreen.preventAutoHideAsync();
 
 setNotificationHandler();
+
+function ThemedStatusBar() {
+  const statusBarBg = useThemeColor({}, "background");
+  const statusBarStyle = useThemeColor({ light: "dark", dark: "light" }, "textPrimary") as "light" | "dark";
+  return <StatusBar style={statusBarStyle} backgroundColor={statusBarBg} translucent={false} />;
+}
 
 export default function RootLayout() {
   const notificationListener = useRef<ReturnType<typeof Notifications.addNotificationReceivedListener> | null>(null);
@@ -108,11 +115,15 @@ export default function RootLayout() {
             options={{ title: "Edit Reminder" }}
           />
           <Stack.Screen
+            name="edit-drug/[id]"
+            options={{ title: "Edit Medication" }}
+          />
+          <Stack.Screen
             name="onboarding"
             options={{ headerShown: false }}
           />
         </Stack>
-        <StatusBar style="auto" />
+        <ThemedStatusBar />
       </ThemeProvider>
     </GestureHandlerRootView>
   );
