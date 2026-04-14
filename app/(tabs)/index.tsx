@@ -17,6 +17,7 @@ import { Typography } from "@/constants/typography";
 import { Spacing, Radius, Shadow } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useReminders } from "@/hooks/use-reminders";
+import type { ReminderWithDrugs } from "@/hooks/use-reminders";
 import { useAdherence } from "@/hooks/use-adherence";
 import { ReminderCard } from "@/components/reminder-card";
 import { SkeletonCard } from "@/components/skeleton-card";
@@ -31,8 +32,7 @@ import type { Reminder } from "@/types/reminder";
 function getGreeting(): { text: string; icon: string } {
   const hour = new Date().getHours();
   if (hour < 12) return { text: "Good morning", icon: "weather-sunny" };
-  if (hour < 17)
-    return { text: "Good afternoon", icon: "weather-partly-cloudy" };
+  if (hour < 17) return { text: "Good afternoon", icon: "weather-partly-cloudy" };
   return { text: "Good evening", icon: "weather-night" };
 }
 
@@ -45,7 +45,7 @@ function getTimePeriod(hour: number): string {
 
 type HomeListItem =
   | { type: "period"; label: string; id: string }
-  | { type: "reminder"; reminder: Reminder; id: string };
+  | { type: "reminder"; reminder: ReminderWithDrugs; id: string };
 
 export default function HomeScreen() {
   const scheme = useColorScheme();
@@ -64,16 +64,15 @@ export default function HomeScreen() {
   const [showPermissionBanner, setShowPermissionBanner] = useState(true);
   const progressAnim = useRef(new Animated.Value(0)).current;
 
-  // Toast state
   const [toast, setToast] = useState<{
     visible: boolean;
     message: string;
-    reminderId: string;
-  }>({ visible: false, message: "", reminderId: "" });
+    drugId: string;
+    date: string;
+  }>({ visible: false, message: "", drugId: "", date: "" });
 
-  // Action sheet state
   const [actionSheetReminder, setActionSheetReminder] = useState<{
-    reminder: Reminder;
+    reminder: ReminderWithDrugs;
     time: string;
   } | null>(null);
 
@@ -85,33 +84,27 @@ export default function HomeScreen() {
     [getLogsForDate],
   );
 
-  const takenIds = useMemo(
-    () =>
-      new Set(
-        todayLogs
-          .filter((l) => l.status === "taken")
-          .map((l) => l.reminderId),
-      ),
+  // Per-drug tracking
+  const takenDrugIds = useMemo(
+    () => new Set(todayLogs.filter((l) => l.status === "taken").map((l) => l.drugId)),
     [todayLogs],
   );
 
-  const skippedIds = useMemo(
-    () =>
-      new Set(
-        todayLogs
-          .filter((l) => l.status === "skipped")
-          .map((l) => l.reminderId),
-      ),
+  const skippedDrugIds = useMemo(
+    () => new Set(todayLogs.filter((l) => l.status === "skipped").map((l) => l.drugId)),
     [todayLogs],
   );
 
-  const takenCount = takenIds.size;
-  const totalCount = todayReminders.length;
+  // Progress counts total drug-doses, not reminders
+  const totalDrugDoses = todayReminders.reduce((sum, r) => sum + r.drugs.length, 0);
+  const takenDrugCount = todayReminders.reduce(
+    (sum, r) => sum + r.drugs.filter((d) => takenDrugIds.has(d.id)).length,
+    0,
+  );
   const percent =
-    totalCount === 0 ? 0 : Math.round((takenCount / totalCount) * 100);
-  const allDone = takenCount === totalCount && totalCount > 0;
+    totalDrugDoses === 0 ? 0 : Math.round((takenDrugCount / totalDrugDoses) * 100);
+  const allDone = takenDrugCount === totalDrugDoses && totalDrugDoses > 0;
 
-  // Streak
   const monthStats = useMemo(
     () => getMonthlyStats(new Date().getFullYear(), new Date().getMonth()),
     [getMonthlyStats],
@@ -129,30 +122,50 @@ export default function HomeScreen() {
     }).start();
   }, [percent, progressAnim]);
 
-  const handleMarkTaken = useCallback(
-    (reminderId: string) => {
-      markTaken(reminderId);
+  const handleMarkDrug = useCallback(
+    (reminderId: string, drugId: string) => {
+      markTaken(reminderId, drugId);
       const reminder = todayReminders.find((r) => r.id === reminderId);
+      const drug = reminder?.drugs.find((d) => d.id === drugId);
       setToast({
         visible: true,
-        message: `${reminder?.name ?? "Dose"} marked as taken`,
-        reminderId,
+        message: `${drug?.name ?? "Dose"} marked as taken`,
+        drugId,
+        date: toDateString(new Date()),
       });
     },
     [markTaken, todayReminders],
   );
 
+  const handleMarkAll = useCallback(
+    (reminder: ReminderWithDrugs) => {
+      const today = toDateString(new Date());
+      for (const drug of reminder.drugs) {
+        if (!takenDrugIds.has(drug.id) && !skippedDrugIds.has(drug.id)) {
+          markTaken(reminder.id, drug.id, today);
+        }
+      }
+      setToast({
+        visible: true,
+        message: `${reminder.name} — all doses marked as taken`,
+        drugId: "__all__",
+        date: today,
+      });
+    },
+    [markTaken, takenDrugIds, skippedDrugIds],
+  );
+
   const handleMarkSkipped = useCallback(
-    (reminderId: string) => {
-      markSkipped(reminderId, toDateString(new Date()));
+    (reminderId: string, drugId: string) => {
+      markSkipped(reminderId, drugId, toDateString(new Date()));
     },
     [markSkipped],
   );
 
   const handleUndo = useCallback(
-    (reminderId: string) => {
-      undoLog(reminderId, toDateString(new Date()));
-      setToast({ visible: false, message: "", reminderId: "" });
+    (drugId: string, date: string) => {
+      undoLog(drugId, date);
+      setToast({ visible: false, message: "", drugId: "", date: "" });
     },
     [undoLog],
   );
@@ -167,12 +180,12 @@ export default function HomeScreen() {
     const sorted = [...todayReminders].sort((a, b) =>
       a.hour !== b.hour ? a.hour - b.hour : a.minute - b.minute,
     );
-    const pending = sorted.filter(
-      (r) => !takenIds.has(r.id) && !skippedIds.has(r.id),
-    );
-    const completed = sorted.filter(
-      (r) => takenIds.has(r.id) || skippedIds.has(r.id),
-    );
+    // A reminder is "fully done" if all its drugs are taken or skipped
+    const isFullyDone = (r: ReminderWithDrugs) =>
+      r.drugs.every((d) => takenDrugIds.has(d.id) || skippedDrugIds.has(d.id));
+
+    const pending = sorted.filter((r) => !isFullyDone(r));
+    const completed = sorted.filter(isFullyDone);
     const items: HomeListItem[] = [];
     let lastPeriod = "";
     for (const r of pending) {
@@ -194,24 +207,32 @@ export default function HomeScreen() {
       }
     }
     return items;
-  }, [todayReminders, takenIds, skippedIds]);
+  }, [todayReminders, takenDrugIds, skippedDrugIds]);
 
   const handleLongPress = useCallback(
-    (reminder: Reminder) => {
-      const isTaken = takenIds.has(reminder.id);
-      const isSkipped = skippedIds.has(reminder.id);
+    (reminder: ReminderWithDrugs) => {
+      const isFullyDone = reminder.drugs.every(
+        (d) => takenDrugIds.has(d.id) || skippedDrugIds.has(d.id),
+      );
       const options: ActionSheetOption[] = [];
 
-      if (!isTaken && !isSkipped) {
+      if (!isFullyDone) {
         options.push({
-          label: "Mark as Taken",
+          label: "Mark All as Taken",
           icon: "check-circle-outline",
-          onPress: () => handleMarkTaken(reminder.id),
+          onPress: () => handleMarkAll(reminder),
         });
         options.push({
-          label: "Skip This Dose",
+          label: "Skip All",
           icon: "minus-circle-outline",
-          onPress: () => handleMarkSkipped(reminder.id),
+          onPress: () => {
+            const today = toDateString(new Date());
+            for (const drug of reminder.drugs) {
+              if (!takenDrugIds.has(drug.id) && !skippedDrugIds.has(drug.id)) {
+                handleMarkSkipped(reminder.id, drug.id);
+              }
+            }
+          },
         });
       }
 
@@ -226,7 +247,7 @@ export default function HomeScreen() {
         time: formatTime(reminder.hour, reminder.minute),
       });
     },
-    [takenIds, skippedIds, handleMarkTaken, handleMarkSkipped],
+    [takenDrugIds, skippedDrugIds, handleMarkAll, handleMarkSkipped],
   );
 
   if (loading) {
@@ -238,18 +259,8 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View style={styles.greetingRow}>
             <View style={styles.greetingLeft}>
-              <View
-                style={[
-                  styles.skeletonText,
-                  { backgroundColor: colors.divider },
-                ]}
-              />
-              <View
-                style={[
-                  styles.skeletonTextSm,
-                  { backgroundColor: colors.divider },
-                ]}
-              />
+              <View style={[styles.skeletonText, { backgroundColor: colors.divider }]} />
+              <View style={[styles.skeletonTextSm, { backgroundColor: colors.divider }]} />
             </View>
           </View>
         </View>
@@ -271,55 +282,30 @@ export default function HomeScreen() {
         data={homeItems}
         keyExtractor={(item) => item.id}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
         ListHeaderComponent={
           <View style={styles.header}>
-            {/* Permission banner */}
             {!notifPermission && showPermissionBanner && (
-              <PermissionBanner
-                onDismiss={() => setShowPermissionBanner(false)}
-              />
+              <PermissionBanner onDismiss={() => setShowPermissionBanner(false)} />
             )}
 
-            {/* Greeting */}
             <View style={styles.greetingRow}>
               <View style={styles.greetingLeft}>
-                <Text
-                  style={[styles.greeting, { color: colors.textPrimary }]}
-                >
+                <Text style={[styles.greeting, { color: colors.textPrimary }]}>
                   {greeting.text}
                 </Text>
-                <Text style={[styles.date, { color: colors.textSecondary }]}>
-                  {todayStr}
-                </Text>
+                <Text style={[styles.date, { color: colors.textSecondary }]}>{todayStr}</Text>
               </View>
               <View
-                style={[
-                  styles.greetingIcon,
-                  { backgroundColor: colors.primaryLight },
-                ]}
+                style={[styles.greetingIcon, { backgroundColor: colors.primaryLight }]}
               >
-                <MaterialCommunityIcons
-                  name={greeting.icon as any}
-                  size={24}
-                  color={colors.primary}
-                />
+                <MaterialCommunityIcons name={greeting.icon as any} size={24} color={colors.primary} />
               </View>
             </View>
 
-            {/* Progress Card */}
-            {totalCount > 0 && (
-              <View
-                style={[
-                  styles.progressCard,
-                  { backgroundColor: colors.primaryLight },
-                ]}
-              >
+            {totalDrugDoses > 0 && (
+              <View style={[styles.progressCard, { backgroundColor: colors.primaryLight }]}>
                 <View style={styles.progressInfo}>
                   <MaterialCommunityIcons
                     name={allDone ? "check-circle" : "clock-outline"}
@@ -327,24 +313,14 @@ export default function HomeScreen() {
                     color={allDone ? colors.success : colors.primary}
                   />
                   <Text
-                    style={[
-                      styles.progressTitle,
-                      {
-                        color: allDone ? colors.success : colors.primary,
-                      },
-                    ]}
+                    style={[styles.progressTitle, { color: allDone ? colors.success : colors.primary }]}
                   >
                     {allDone
                       ? "All done for today!"
-                      : `${totalCount - takenCount} dose${totalCount - takenCount !== 1 ? "s" : ""} remaining`}
+                      : `${totalDrugDoses - takenDrugCount} dose${totalDrugDoses - takenDrugCount !== 1 ? "s" : ""} remaining`}
                   </Text>
                 </View>
-                <View
-                  style={[
-                    styles.progressTrack,
-                    { backgroundColor: `${colors.primary}20` },
-                  ]}
-                >
+                <View style={[styles.progressTrack, { backgroundColor: `${colors.primary}20` }]}>
                   <Animated.View
                     style={[
                       styles.progressFill,
@@ -353,29 +329,19 @@ export default function HomeScreen() {
                           inputRange: [0, 100],
                           outputRange: ["0%", "100%"],
                         }),
-                        backgroundColor: allDone
-                          ? colors.success
-                          : colors.primary,
+                        backgroundColor: allDone ? colors.success : colors.primary,
                       },
                     ]}
                   />
                 </View>
                 <View style={styles.progressFooter}>
-                  <Text
-                    style={[styles.progressSubtitle, { color: colors.primary }]}
-                  >
-                    {takenCount} of {totalCount} doses taken
+                  <Text style={[styles.progressSubtitle, { color: colors.primary }]}>
+                    {takenDrugCount} of {totalDrugDoses} doses taken
                   </Text>
                   {monthStats.streak > 0 && (
                     <View style={styles.streakBadge}>
-                      <MaterialCommunityIcons
-                        name="fire"
-                        size={14}
-                        color={colors.warning}
-                      />
-                      <Text
-                        style={[styles.streakText, { color: colors.warning }]}
-                      >
+                      <MaterialCommunityIcons name="fire" size={14} color={colors.warning} />
+                      <Text style={[styles.streakText, { color: colors.warning }]}>
                         {monthStats.streak}d
                       </Text>
                     </View>
@@ -397,21 +363,19 @@ export default function HomeScreen() {
         renderItem={({ item }) => {
           if (item.type === "period") {
             return (
-              <Text
-                style={[styles.periodHeader, { color: colors.textSecondary }]}
-              >
+              <Text style={[styles.periodHeader, { color: colors.textSecondary }]}>
                 {item.label}
               </Text>
             );
           }
-          const isTaken = takenIds.has(item.reminder.id);
-          const isSkipped = skippedIds.has(item.reminder.id);
           return (
             <ReminderCard
               reminder={item.reminder}
-              isTaken={isTaken}
-              isSkipped={isSkipped}
-              onMarkTaken={() => handleMarkTaken(item.reminder.id)}
+              drugs={item.reminder.drugs}
+              takenDrugIds={takenDrugIds}
+              skippedDrugIds={skippedDrugIds}
+              onMarkDrug={(drugId) => handleMarkDrug(item.reminder.id, drugId)}
+              onMarkAll={() => handleMarkAll(item.reminder)}
               onLongPress={() => handleLongPress(item.reminder)}
             />
           );
@@ -419,7 +383,6 @@ export default function HomeScreen() {
         contentContainerStyle={styles.list}
       />
 
-      {/* FAB — always visible */}
       <Pressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -431,25 +394,32 @@ export default function HomeScreen() {
         <MaterialCommunityIcons name="plus" size={28} color="#FFFFFF" />
       </Pressable>
 
-      {/* Action Sheet */}
       {actionSheetReminder && (
         <ActionSheet
           options={(() => {
             const r = actionSheetReminder.reminder;
-            const isTaken = takenIds.has(r.id);
-            const isSkipped = skippedIds.has(r.id);
+            const isFullyDone = r.drugs.every(
+              (d) => takenDrugIds.has(d.id) || skippedDrugIds.has(d.id),
+            );
             const opts: ActionSheetOption[] = [];
-            if (!isTaken && !isSkipped) {
+            if (!isFullyDone) {
               opts.push(
                 {
-                  label: "Mark as Taken",
+                  label: "Mark All as Taken",
                   icon: "check-circle-outline",
-                  onPress: () => handleMarkTaken(r.id),
+                  onPress: () => handleMarkAll(r),
                 },
                 {
-                  label: "Skip This Dose",
+                  label: "Skip All",
                   icon: "minus-circle-outline",
-                  onPress: () => handleMarkSkipped(r.id),
+                  onPress: () => {
+                    const today = toDateString(new Date());
+                    for (const drug of r.drugs) {
+                      if (!takenDrugIds.has(drug.id) && !skippedDrugIds.has(drug.id)) {
+                        handleMarkSkipped(r.id, drug.id);
+                      }
+                    }
+                  },
                 },
               );
             }
@@ -464,13 +434,12 @@ export default function HomeScreen() {
         />
       )}
 
-      {/* Undo Toast */}
       <ToastSnackbar
         visible={toast.visible}
         message={toast.message}
         actionLabel="Undo"
-        onAction={() => handleUndo(toast.reminderId)}
-        onDismiss={() => setToast({ visible: false, message: "", reminderId: "" })}
+        onAction={() => handleUndo(toast.drugId, toast.date)}
+        onDismiss={() => setToast({ visible: false, message: "", drugId: "", date: "" })}
       />
     </SafeAreaView>
   );
@@ -488,9 +457,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: Spacing.lg,
   },
-  greetingLeft: {
-    flex: 1,
-  },
+  greetingLeft: { flex: 1 },
   greeting: {
     ...Typography.lg,
     fontWeight: Typography.bold,
