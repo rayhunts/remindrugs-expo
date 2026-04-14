@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import {
   View,
   Text,
-  TextInput,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -20,27 +19,10 @@ import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHeaderStyle } from "@/hooks/use-header-style";
 import { useDrugs } from "@/hooks/use-drugs";
+import { ThemedInput } from "@/components/themed-input";
 import { formatTime } from "@/utils/date-helpers";
+import { DRUG_FORMS, PILL_COLORS } from "@/constants/drug-forms";
 import type { Drug, DrugForm, Reminder } from "@/types/reminder";
-
-const DRUG_FORMS: { label: string; icon: string; value: DrugForm }[] = [
-  { label: "Tablet", icon: "pill", value: "tablet" },
-  { label: "Capsule", icon: "medical-bag", value: "capsule" },
-  { label: "Liquid", icon: "water", value: "liquid" },
-  { label: "Injection", icon: "needle", value: "injection" },
-  { label: "Patch", icon: "bandage", value: "patch" },
-  { label: "Inhaler", icon: "lungs", value: "inhaler" },
-  { label: "Drops", icon: "eye-outline", value: "drops" },
-];
-
-const PILL_COLORS = [
-  "#EF4444",
-  "#F97316",
-  "#EAB308",
-  "#22C55E",
-  "#3B82F6",
-  "#8B5CF6",
-];
 
 export default function EditDrugScreen() {
   const scheme = useColorScheme();
@@ -146,10 +128,8 @@ export default function EditDrugScreen() {
           {/* Name */}
           <View style={styles.section}>
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>NAME</Text>
-            <TextInput
-              style={[styles.input, { color: colors.textPrimary, backgroundColor: colors.card, borderColor: colors.border }]}
+            <ThemedInput
               placeholder="Medication name"
-              placeholderTextColor={colors.textTertiary}
               value={name}
               onChangeText={setName}
             />
@@ -158,17 +138,15 @@ export default function EditDrugScreen() {
           {/* Dosage + Quantity */}
           <View style={styles.section}>
             <View style={styles.row}>
-              <TextInput
-                style={[styles.input, styles.flex1, { color: colors.textPrimary, backgroundColor: colors.card, borderColor: colors.border }]}
+              <ThemedInput
+                style={styles.flex1}
                 placeholder="Dosage (e.g. 500mg)"
-                placeholderTextColor={colors.textTertiary}
                 value={dosage}
                 onChangeText={setDosage}
               />
-              <TextInput
-                style={[styles.input, styles.qtyInput, { color: colors.textPrimary, backgroundColor: colors.card, borderColor: colors.border }]}
+              <ThemedInput
+                style={styles.qtyInput}
                 placeholder="Qty"
-                placeholderTextColor={colors.textTertiary}
                 value={quantity > 0 ? String(quantity) : ""}
                 onChangeText={(text) => {
                   const qty = parseInt(text, 10);
@@ -221,10 +199,8 @@ export default function EditDrugScreen() {
           {/* Notes */}
           <View style={styles.section}>
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>NOTES</Text>
-            <TextInput
-              style={[styles.input, { color: colors.textPrimary, backgroundColor: colors.card, borderColor: colors.border }]}
+            <ThemedInput
               placeholder="Notes (optional, e.g. take with food)"
-              placeholderTextColor={colors.textTertiary}
               value={notes}
               onChangeText={setNotes}
             />
@@ -261,18 +237,16 @@ export default function EditDrugScreen() {
           <View style={styles.section}>
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>STOCK TRACKING</Text>
             <View style={styles.row}>
-              <TextInput
-                style={[styles.input, styles.flex1, { color: colors.textPrimary, backgroundColor: colors.card, borderColor: colors.border }]}
+              <ThemedInput
+                style={styles.flex1}
                 placeholder="Pills remaining"
-                placeholderTextColor={colors.textTertiary}
                 value={currentStock}
                 onChangeText={setCurrentStock}
                 keyboardType="numeric"
               />
-              <TextInput
-                style={[styles.input, styles.flex1, { color: colors.textPrimary, backgroundColor: colors.card, borderColor: colors.border }]}
+              <ThemedInput
+                style={styles.flex1}
                 placeholder="Alert at"
-                placeholderTextColor={colors.textTertiary}
                 value={stockThreshold}
                 onChangeText={setStockThreshold}
                 keyboardType="numeric"
@@ -305,7 +279,13 @@ export default function EditDrugScreen() {
           <Pressable
             onPress={handleSave}
             disabled={!isValid}
-            style={[styles.saveButton, { backgroundColor: isValid ? colors.primary : colors.divider }]}
+            style={({ pressed }) => [
+              styles.saveButton,
+              {
+                backgroundColor: isValid ? colors.primary : colors.divider,
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
           >
             <Text style={[styles.saveText, { color: isValid ? colors.textInverse : colors.textTertiary }]}>
               Save Changes
@@ -313,7 +293,7 @@ export default function EditDrugScreen() {
           </Pressable>
 
           {/* Delete */}
-          <Pressable onPress={handleDelete} style={styles.deleteButton}>
+          <Pressable onPress={handleDelete} style={({ pressed }) => [styles.deleteButton, { opacity: pressed ? 0.7 : 1 }]}>
             <Text style={[styles.deleteText, { color: colors.danger }]}>Delete Medication</Text>
           </Pressable>
 

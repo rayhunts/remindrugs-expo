@@ -1,7 +1,7 @@
 import { Pressable, Text, View, StyleSheet } from "react-native";
 import { useMemo, useCallback } from "react";
 import * as Haptics from "expo-haptics";
-import { Colors, getColors } from "@/constants/colors";
+import { getColors } from "@/constants/colors";
 import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";

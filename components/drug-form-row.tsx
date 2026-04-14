@@ -4,26 +4,8 @@ import { getColors } from "@/constants/colors";
 import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { DRUG_FORMS, PILL_COLORS } from "@/constants/drug-forms";
 import type { Drug, DrugForm } from "@/types/reminder";
-
-const DRUG_FORMS: { label: string; icon: string; value: DrugForm }[] = [
-  { label: "Tablet", icon: "pill", value: "tablet" },
-  { label: "Capsule", icon: "medical-bag", value: "capsule" },
-  { label: "Liquid", icon: "water", value: "liquid" },
-  { label: "Injection", icon: "needle", value: "injection" },
-  { label: "Patch", icon: "bandage", value: "patch" },
-  { label: "Inhaler", icon: "lungs", value: "inhaler" },
-  { label: "Drops", icon: "eye-outline", value: "drops" },
-];
-
-const PILL_COLORS = [
-  "#EF4444",
-  "#F97316",
-  "#EAB308",
-  "#22C55E",
-  "#3B82F6",
-  "#8B5CF6",
-];
 
 interface DrugFormRowProps {
   drug: Drug;

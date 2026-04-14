@@ -11,9 +11,10 @@ interface DrugChipProps {
   color?: string;
   checked?: boolean;
   onToggle?: () => void;
+  strikeThrough?: boolean;
 }
 
-export function DrugChip({ name, dosage, color, checked, onToggle }: DrugChipProps) {
+export function DrugChip({ name, dosage, color, checked, onToggle, strikeThrough = true }: DrugChipProps) {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
 
@@ -24,8 +25,8 @@ export function DrugChip({ name, dosage, color, checked, onToggle }: DrugChipPro
         style={[
           styles.chip,
           {
-            backgroundColor: checked ? colors.successLight : colors.primaryLight,
-            borderColor: checked ? colors.success : "transparent",
+            backgroundColor: checked ? colors.successLight : colors.divider,
+            borderColor: checked ? colors.success : colors.border,
             borderWidth: 1,
           },
         ]}
@@ -43,7 +44,7 @@ export function DrugChip({ name, dosage, color, checked, onToggle }: DrugChipPro
             styles.text,
             {
               color: checked ? colors.success : colors.textPrimary,
-              textDecorationLine: checked ? "line-through" : "none",
+              textDecorationLine: checked && strikeThrough ? "line-through" : "none",
             },
           ]}
           numberOfLines={1}

@@ -1,7 +1,7 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Platform, Pressable, Text, Modal, View, StyleSheet } from "react-native";
 import { useState, useCallback } from "react";
-import { Colors, getColors } from "@/constants/colors";
+import { getColors } from "@/constants/colors";
 import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -46,7 +46,14 @@ export function TimePickerField({
     <View>
       <Pressable
         onPress={handlePress}
-        style={[styles.button, { borderColor: colors.border, backgroundColor: colors.card }]}
+        style={({ pressed }) => [
+          styles.button,
+          {
+            borderColor: colors.border,
+            backgroundColor: colors.card,
+            opacity: pressed ? 0.7 : 1,
+          },
+        ]}
         accessibilityLabel={`Select time, currently ${label}`}
       >
         <Text style={[styles.label, { color: colors.textSecondary }]}>

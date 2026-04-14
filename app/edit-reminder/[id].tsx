@@ -2,7 +2,6 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import {
   View,
   Text,
-  TextInput,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -25,20 +24,12 @@ import { DaySelector } from "@/components/day-selector";
 import { TimePickerField } from "@/components/time-picker-field";
 import { FrequencyBadge } from "@/components/frequency-badge";
 import { DrugChip } from "@/components/drug-chip";
+import { ThemedInput } from "@/components/themed-input";
 import { generateId } from "@/utils/date-helpers";
 import { rescheduleReminder, cancelReminder, scheduleRefillReminder } from "@/services/notification-service";
 import { getDrugById } from "@/services/database";
+import { DRUG_FORMS } from "@/constants/drug-forms";
 import type { Drug, DrugForm, Reminder, Weekday } from "@/types/reminder";
-
-const DRUG_FORMS: { label: string; icon: string; value: DrugForm }[] = [
-  { label: "Tablet", icon: "pill", value: "tablet" },
-  { label: "Capsule", icon: "medical-bag", value: "capsule" },
-  { label: "Liquid", icon: "water", value: "liquid" },
-  { label: "Injection", icon: "needle", value: "injection" },
-  { label: "Patch", icon: "bandage", value: "patch" },
-  { label: "Inhaler", icon: "lungs", value: "inhaler" },
-  { label: "Drops", icon: "eye-outline", value: "drops" },
-];
 
 export default function EditReminderScreen() {
   const scheme = useColorScheme();
@@ -208,10 +199,8 @@ export default function EditReminderScreen() {
           {/* Reminder Name */}
           <View style={styles.section}>
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>REMINDER NAME</Text>
-            <TextInput
-              style={[styles.input, { color: colors.textPrimary, backgroundColor: colors.card, borderColor: colors.border }]}
+            <ThemedInput
               placeholder='e.g. "Morning Meds"'
-              placeholderTextColor={colors.textTertiary}
               value={name}
               onChangeText={(text) => {
                 setName(text);
@@ -256,6 +245,7 @@ export default function EditReminderScreen() {
                     color={drug.color}
                     checked={selectedDrugIds.includes(drug.id)}
                     onToggle={() => toggleDrug(drug.id)}
+                    strikeThrough={false}
                   />
                 ))}
               </View>
@@ -277,25 +267,21 @@ export default function EditReminderScreen() {
             ) : (
               <View style={[styles.newDrugCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Text style={[styles.newDrugTitle, { color: colors.textPrimary }]}>New Medication</Text>
-                <TextInput
-                  style={[styles.input, { color: colors.textPrimary, backgroundColor: colors.background, borderColor: colors.border }]}
+                <ThemedInput
                   placeholder="Medication name"
-                  placeholderTextColor={colors.textTertiary}
                   value={newDrugName}
                   onChangeText={setNewDrugName}
                 />
                 <View style={styles.row}>
-                  <TextInput
-                    style={[styles.input, styles.flex1, { color: colors.textPrimary, backgroundColor: colors.background, borderColor: colors.border }]}
+                  <ThemedInput
+                    style={styles.flex1}
                     placeholder="Dosage (e.g. 500mg)"
-                    placeholderTextColor={colors.textTertiary}
                     value={newDrugDosage}
                     onChangeText={setNewDrugDosage}
                   />
-                  <TextInput
-                    style={[styles.input, styles.qtyInput, { color: colors.textPrimary, backgroundColor: colors.background, borderColor: colors.border }]}
+                  <ThemedInput
+                    style={styles.qtyInput}
                     placeholder="Qty"
-                    placeholderTextColor={colors.textTertiary}
                     value={newDrugQty > 0 ? String(newDrugQty) : ""}
                     onChangeText={(text) => {
                       const qty = parseInt(text, 10);
@@ -360,7 +346,13 @@ export default function EditReminderScreen() {
           <Pressable
             onPress={handleSave}
             disabled={!isValid}
-            style={[styles.saveButton, { backgroundColor: isValid ? colors.primary : colors.divider }]}
+            style={({ pressed }) => [
+              styles.saveButton,
+              {
+                backgroundColor: isValid ? colors.primary : colors.divider,
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
           >
             <Text style={[styles.saveText, { color: isValid ? colors.textInverse : colors.textTertiary }]}>
               Save Changes
@@ -368,7 +360,7 @@ export default function EditReminderScreen() {
           </Pressable>
 
           {/* Delete */}
-          <Pressable onPress={handleDelete} style={styles.deleteButton}>
+          <Pressable onPress={handleDelete} style={({ pressed }) => [styles.deleteButton, { opacity: pressed ? 0.7 : 1 }]}>
             <Text style={[styles.deleteText, { color: colors.danger }]}>Delete Reminder</Text>
           </Pressable>
 
