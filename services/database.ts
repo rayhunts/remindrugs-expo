@@ -202,6 +202,37 @@ export function deleteLog(id: string): void {
   db.runSync("DELETE FROM adherence_logs WHERE id = ?", id);
 }
 
+export function deleteLogByReminderAndDate(
+  reminderId: string,
+  date: string,
+): void {
+  db.runSync(
+    "DELETE FROM adherence_logs WHERE reminder_id = ? AND date = ?",
+    reminderId,
+    date,
+  );
+}
+
+export function clearAllData(): void {
+  db.execSync("DELETE FROM adherence_logs");
+  db.execSync("DELETE FROM reminders");
+}
+
+export function exportAllData(): { reminders: Reminder[]; logs: AdherenceLog[] } {
+  const reminders = getAllReminders();
+  const logs = db
+    .getAllSync<{
+      id: string;
+      reminder_id: string;
+      date: string;
+      status: string;
+      taken_at: number | null;
+      notes: string | null;
+    }>("SELECT * FROM adherence_logs ORDER BY date DESC")
+    .map(mapAdherenceRow);
+  return { reminders, logs };
+}
+
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 function mapReminderRow(row: {

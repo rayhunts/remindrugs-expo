@@ -1,14 +1,13 @@
 import { Colors } from "@/constants/colors";
-
-export function generateId(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`;
-}
 import type { AdherenceLog } from "@/types/adherence";
 import type { Weekday } from "@/types/reminder";
+import * as Crypto from "expo-crypto";
 
-export function getFrequencyLabel(
-  days: Weekday[],
-): "Daily" | "Weekly" | "Custom" {
+export function generateId(): string {
+  return Crypto.randomUUID();
+}
+
+export function getFrequencyLabel(days: Weekday[]): "Daily" | "Weekly" | "Custom" {
   if (days.length === 7) return "Daily";
   if (days.length === 1) return "Weekly";
   return "Custom";
@@ -32,7 +31,10 @@ export function getDayAbbreviations(days: Weekday[]): string {
 }
 
 export function toDateString(date: Date): string {
-  return date.toISOString().split("T")[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export function getAdherenceColor(taken: number, total: number): string {
@@ -63,9 +65,7 @@ export function calculateStreak(logs: AdherenceLog[]): number {
     const dayLogs = logMap.get(dateStr);
 
     if (dayLogs && dayLogs.size > 0) {
-      const allTaken = Array.from(dayLogs.values()).every(
-        (s) => s === "taken",
-      );
+      const allTaken = Array.from(dayLogs.values()).every((s) => s === "taken");
       if (!allTaken) break;
       streak++;
     }
