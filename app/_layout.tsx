@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import * as Notifications from "expo-notifications";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { initDatabase, getReminderById, logDose } from "@/services/database";
+import { initDatabase, getReminderById, getDrugsForReminder, logDose } from "@/services/database";
 import {
   setNotificationHandler,
   setupNotificationChannel,
@@ -69,25 +69,28 @@ export default function RootLayout() {
         if (!reminderId) return;
 
         if (actionId === "mark-done") {
-          // User tapped "Done" action button
           try {
             const today = toDateString(new Date());
-            logDose({
-              id: generateId(),
-              reminderId,
-              date: today,
-              status: "taken",
-              takenAt: Date.now(),
-            });
+            const drugs = getDrugsForReminder(reminderId);
+            for (const drug of drugs) {
+              logDose({
+                id: generateId(),
+                reminderId,
+                drugId: drug.id,
+                date: today,
+                status: "taken",
+                takenAt: Date.now(),
+              });
+            }
             adherenceEvents.emit();
           } catch (e) {
             console.error("Failed to log dose from notification:", e);
           }
         } else if (actionId === "snooze") {
-          // User tapped "Snooze" action button
           const reminder = getReminderById(reminderId);
           if (reminder) {
-            scheduleSnooze(reminder).catch((e) =>
+            const drugs = getDrugsForReminder(reminderId);
+            scheduleSnooze(reminder, drugs).catch((e) =>
               console.error("Failed to snooze:", e),
             );
           }
