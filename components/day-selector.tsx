@@ -5,6 +5,7 @@ import { getColors } from "@/constants/colors";
 import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useLanguage } from "@/contexts/language-context";
 import type { Weekday } from "@/types/reminder";
 
 const DAYS = ["S", "M", "T", "W", "T", "F", "S"] as const;
@@ -17,6 +18,9 @@ interface DaySelectorProps {
 export function DaySelector({ selectedDays, onChange }: DaySelectorProps) {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
+  const { t } = useLanguage();
+
+  const dayNames = [t.days.sunday, t.days.monday, t.days.tuesday, t.days.wednesday, t.days.thursday, t.days.friday, t.days.saturday];
 
   const isSelected = useCallback(
     (day: number) => selectedDays.includes(day as Weekday),
@@ -52,11 +56,11 @@ export function DaySelector({ selectedDays, onChange }: DaySelectorProps) {
     <View>
       <View style={styles.header}>
         <Text style={[styles.label, { color: colors.textSecondary }]}>
-          Days
+          {t.components.days}
         </Text>
         <Pressable onPress={allSelected ? clearAll : selectAll}>
           <Text style={[styles.shortcut, { color: colors.primary }]}>
-            {allSelected ? "Clear" : "All"}
+            {allSelected ? t.common.clear : t.common.all}
           </Text>
         </Pressable>
       </View>
@@ -79,7 +83,7 @@ export function DaySelector({ selectedDays, onChange }: DaySelectorProps) {
                     : colors.border,
                 },
               ]}
-              accessibilityLabel={`${["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][index]}${selected ? ", selected" : ""}`}
+              accessibilityLabel={`${dayNames[index]}${selected ? ", selected" : ""}`}
             >
               <Text
                 style={[
@@ -100,7 +104,7 @@ export function DaySelector({ selectedDays, onChange }: DaySelectorProps) {
 
       {noneSelected && (
         <Text style={[styles.hint, { color: colors.danger }]}>
-          Select at least one day
+          {t.components.selectAtLeastOneDay}
         </Text>
       )}
     </View>

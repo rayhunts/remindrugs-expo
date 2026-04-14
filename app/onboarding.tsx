@@ -15,33 +15,7 @@ import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { requestNotificationPermissions } from "@/services/notification-service";
 import { setSetting } from "@/services/settings-service";
-
-const SCREENS = [
-  {
-    icon: "pill",
-    title: "Welcome to\nRemindrugs",
-    description:
-      "Never miss a dose again. Manage all your medications in one simple, private app.",
-    buttonText: "Get Started",
-    skipText: "Skip",
-  },
-  {
-    icon: "calendar-check",
-    title: "Track Your\nAdherence",
-    description:
-      "See your medication history on a calendar. Track streaks, view monthly stats, and retroactively log doses.",
-    buttonText: "Next",
-    skipText: "Skip",
-  },
-  {
-    icon: "bell-outline",
-    title: "Never Miss\na Dose",
-    description:
-      "Remindrugs sends a gentle reminder at exactly the right time, every day. You can even snooze for 15 minutes.",
-    buttonText: "Enable Reminders",
-    skipText: "Maybe later",
-  },
-];
+import { useLanguage } from "@/contexts/language-context";
 
 const { width } = Dimensions.get("window");
 
@@ -49,7 +23,33 @@ export default function OnboardingScreen() {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
   const router = useRouter();
+  const { t } = useLanguage();
   const [step, setStep] = useState(0);
+
+  const SCREENS = [
+    {
+      icon: "pill",
+      title: t.onboarding.welcomeTitle,
+      description: t.onboarding.welcomeDescription,
+      buttonText: t.onboarding.getStarted,
+      skipText: t.onboarding.skip,
+    },
+    {
+      icon: "calendar-check",
+      title: t.onboarding.trackTitle,
+      description: t.onboarding.trackDescription,
+      buttonText: t.onboarding.next,
+      skipText: t.onboarding.skip,
+    },
+    {
+      icon: "bell-outline",
+      title: t.onboarding.reminderTitle,
+      description: t.onboarding.reminderDescription,
+      buttonText: t.onboarding.enableReminders,
+      skipText: t.onboarding.maybeLater,
+    },
+  ];
+
   const screen = SCREENS[step];
 
   const contentOpacity = useSharedValue(1);
@@ -135,7 +135,7 @@ export default function OnboardingScreen() {
 
       {/* Step indicator */}
       <Text style={[styles.stepText, { color: colors.textTertiary }]}>
-        {step + 1} of {SCREENS.length}
+        {step + 1} {t.onboarding.of} {SCREENS.length}
       </Text>
 
       {/* Buttons */}

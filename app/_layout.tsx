@@ -12,6 +12,7 @@ import {
 } from "@/services/notification-service";
 import { adherenceEvents } from "@/services/event-bus";
 import { ThemeProvider } from "@/contexts/theme-context";
+import { LanguageProvider } from "@/contexts/language-context";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { generateId, toDateString } from "@/utils/date-helpers";
 import { getSetting } from "@/services/settings-service";
@@ -22,7 +23,7 @@ SplashScreen.preventAutoHideAsync();
 setNotificationHandler();
 
 function ThemedStatusBar() {
-  const statusBarBg = useThemeColor({}, "background");
+  const statusBarBg = useThemeColor({}, "background") as string;
   const statusBarStyle = useThemeColor({ light: "dark", dark: "light" }, "textPrimary") as "light" | "dark";
   return <StatusBar style={statusBarStyle} backgroundColor={statusBarBg} translucent={false} />;
 }
@@ -107,6 +108,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
+        <LanguageProvider>
         <Stack screenOptions={{ headerBackTitle: "Back" }}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
@@ -127,6 +129,7 @@ export default function RootLayout() {
           />
         </Stack>
         <ThemedStatusBar />
+        </LanguageProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   );

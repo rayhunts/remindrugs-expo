@@ -17,25 +17,38 @@ import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTheme, type ThemePreference } from "@/contexts/theme-context";
+import { useLanguage, type Locale } from "@/contexts/language-context";
 import { hasNotificationPermission } from "@/services/notification-service";
 import {
   clearAllData,
   exportAllData,
 } from "@/services/database";
 import { setSetting } from "@/services/settings-service";
+import { ToastSnackbar } from "@/components/toast-snackbar";
 
-const THEME_OPTIONS: { value: ThemePreference; label: string; icon: string }[] = [
-  { value: "system", label: "System", icon: "theme-light-dark" },
-  { value: "light", label: "Light", icon: "white-balance-sunny" },
-  { value: "dark", label: "Dark", icon: "moon-waning-crescent" },
+const THEME_OPTIONS: { value: ThemePreference; icon: string }[] = [
+  { value: "system", icon: "theme-light-dark" },
+  { value: "light", icon: "white-balance-sunny" },
+  { value: "dark", icon: "moon-waning-crescent" },
+];
+
+const LANGUAGE_OPTIONS: { value: Locale; icon: string }[] = [
+  { value: "en", icon: "alphabetical" },
+  { value: "id", icon: "translate" },
 ];
 
 export default function SettingsScreen() {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
   const { themePreference, setThemePreference } = useTheme();
+  const { t, locale, setLocale } = useLanguage();
   const [notifEnabled, setNotifEnabled] = useState<boolean | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [toast, setToast] = useState<{
+    visible: boolean;
+    message: string;
+    variant: "success" | "error" | "info";
+  }>({ visible: false, message: "", variant: "success" });
 
   useEffect(() => {
     hasNotificationPermission().then(setNotifEnabled);
@@ -52,34 +65,45 @@ export default function SettingsScreen() {
       if (canShare) {
         await Sharing.shareAsync(file.uri, {
           mimeType: "application/json",
-          dialogTitle: "Export Remindrugs Data",
+          dialogTitle: t.settings.exportData,
         });
       }
     } catch (error) {
-      Alert.alert("Export Failed", "Could not export your data.");
+      setToast({ visible: true, message: t.settings.couldNotExport, variant: "error" });
     } finally {
       setExporting(false);
     }
-  }, []);
+  }, [t]);
 
   const handleClearData = useCallback(() => {
     Alert.alert(
-      "Clear All Data",
-      "This will delete all reminders and adherence logs. This cannot be undone.",
+      t.settings.clearAllDataTitle,
+      t.settings.clearAllDataMessage,
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t.common.cancel, style: "cancel" },
         {
-          text: "Clear Everything",
+          text: t.settings.clearEverything,
           style: "destructive",
           onPress: () => {
             clearAllData();
             setSetting("onboarded", "false");
-            Alert.alert("Data Cleared", "All data has been deleted.");
+            setToast({ visible: true, message: t.settings.allDataDeleted, variant: "success" });
           },
         },
       ],
     );
-  }, []);
+  }, [t]);
+
+  const themeLabels = {
+    system: t.settings.system,
+    light: t.settings.light,
+    dark: t.settings.dark,
+  };
+
+  const languageLabels: Record<Locale, string> = {
+    en: t.settings.english,
+    id: t.settings.indonesian,
+  };
 
   return (
     <SafeAreaView
@@ -90,7 +114,7 @@ export default function SettingsScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.textPrimary }]}>
-            Settings
+            {t.settings.title}
           </Text>
         </View>
 
@@ -102,7 +126,7 @@ export default function SettingsScreen() {
           ]}
         >
           <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-            Notifications
+            {t.settings.notifications}
           </Text>
           <Pressable
             onPress={() => Linking.openSettings()}
@@ -117,14 +141,14 @@ export default function SettingsScreen() {
               />
               <View style={styles.rowText}>
                 <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>
-                  Notifications
+                  {t.settings.notifications}
                 </Text>
                 <Text style={[styles.rowSubtext, { color: colors.textTertiary }]}>
                   {notifEnabled === null
-                    ? "Checking..."
+                    ? t.settings.checking
                     : notifEnabled
-                      ? "Enabled"
-                      : "Disabled"}
+                      ? t.settings.enabled
+                      : t.settings.disabled}
                 </Text>
               </View>
             </View>
@@ -144,10 +168,10 @@ export default function SettingsScreen() {
           ]}
         >
           <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-            Appearance
+            {t.settings.appearance}
           </Text>
           <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>
-            Theme
+            {t.settings.theme}
           </Text>
           <View style={styles.themeRow}>
             {THEME_OPTIONS.map((option) => {
@@ -167,7 +191,7 @@ export default function SettingsScreen() {
                         : colors.border,
                     },
                   ]}
-                  accessibilityLabel={`${option.label}${selected ? ", selected" : ""}`}
+                  accessibilityLabel={`${themeLabels[option.value]}${selected ? ", selected" : ""}`}
                   accessibilityRole="radio"
                 >
                   <MaterialCommunityIcons
@@ -189,7 +213,65 @@ export default function SettingsScreen() {
                       },
                     ]}
                   >
-                    {option.label}
+                    {themeLabels[option.value]}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Language */}
+        <View
+          style={[
+            styles.sectionCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+            {t.settings.language}
+          </Text>
+          <View style={styles.themeRow}>
+            {LANGUAGE_OPTIONS.map((option) => {
+              const selected = locale === option.value;
+              return (
+                <Pressable
+                  key={option.value}
+                  onPress={() => setLocale(option.value)}
+                  style={[
+                    styles.themeOption,
+                    {
+                      backgroundColor: selected
+                        ? colors.primary
+                        : colors.background,
+                      borderColor: selected
+                        ? colors.primary
+                        : colors.border,
+                    },
+                  ]}
+                  accessibilityLabel={`${languageLabels[option.value]}${selected ? ", selected" : ""}`}
+                  accessibilityRole="radio"
+                >
+                  <MaterialCommunityIcons
+                    name={option.icon as any}
+                    size={22}
+                    color={
+                      selected
+                        ? colors.textInverse
+                        : colors.textSecondary
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.themeOptionLabel,
+                      {
+                        color: selected
+                          ? colors.textInverse
+                          : colors.textSecondary,
+                      },
+                    ]}
+                  >
+                    {languageLabels[option.value]}
                   </Text>
                 </Pressable>
               );
@@ -205,13 +287,13 @@ export default function SettingsScreen() {
           ]}
         >
           <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-            Data
+            {t.settings.data}
           </Text>
           <Pressable
             onPress={handleExportData}
             disabled={exporting}
             style={({ pressed }) => [styles.row, { opacity: pressed ? 0.7 : 1 }]}
-            accessibilityLabel="Export data"
+            accessibilityLabel={t.settings.exportData}
           >
             <View style={styles.rowLeft}>
               <MaterialCommunityIcons
@@ -221,10 +303,10 @@ export default function SettingsScreen() {
               />
               <View style={styles.rowText}>
                 <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>
-                  Export Data
+                  {t.settings.exportData}
                 </Text>
                 <Text style={[styles.rowSubtext, { color: colors.textTertiary }]}>
-                  Save reminders and logs as JSON
+                  {t.settings.exportDataDescription}
                 </Text>
               </View>
             </View>
@@ -244,7 +326,7 @@ export default function SettingsScreen() {
           <Pressable
             onPress={handleClearData}
             style={({ pressed }) => [styles.row, { opacity: pressed ? 0.7 : 1 }]}
-            accessibilityLabel="Clear all data"
+            accessibilityLabel={t.settings.clearAllData}
           >
             <View style={styles.rowLeft}>
               <MaterialCommunityIcons
@@ -254,10 +336,10 @@ export default function SettingsScreen() {
               />
               <View style={styles.rowText}>
                 <Text style={[styles.rowLabel, { color: colors.danger }]}>
-                  Clear All Data
+                  {t.settings.clearAllData}
                 </Text>
                 <Text style={[styles.rowSubtext, { color: colors.textTertiary }]}>
-                  Delete reminders and logs
+                  {t.settings.clearAllDataDescription}
                 </Text>
               </View>
             </View>
@@ -277,7 +359,7 @@ export default function SettingsScreen() {
           ]}
         >
           <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-            About
+            {t.settings.about}
           </Text>
           <View style={styles.aboutRow}>
             <MaterialCommunityIcons
@@ -286,7 +368,7 @@ export default function SettingsScreen() {
               color={colors.primary}
             />
             <Text style={[styles.appName, { color: colors.textPrimary }]}>
-              Remindrugs
+              ReminDrugs
             </Text>
           </View>
           <Text style={[styles.version, { color: colors.textTertiary }]}>
@@ -294,11 +376,17 @@ export default function SettingsScreen() {
           </Text>
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <Text style={[styles.privacyNote, { color: colors.textSecondary }]}>
-            All data stored locally on your device. Remindrugs never sends
-            your information to any external server.
+            {t.settings.privacyNote}
           </Text>
         </View>
       </View>
+
+      <ToastSnackbar
+        visible={toast.visible}
+        message={toast.message}
+        variant={toast.variant}
+        onDismiss={() => setToast({ visible: false, message: "", variant: "success" })}
+      />
     </SafeAreaView>
   );
 }

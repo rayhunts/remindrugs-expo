@@ -21,6 +21,7 @@ import { SkeletonCard } from "@/components/skeleton-card";
 import { EmptyState } from "@/components/empty-state";
 import { getRemindersForDrug } from "@/services/database";
 import type { Drug, Reminder } from "@/types/reminder";
+import { useLanguage } from "@/contexts/language-context";
 
 type MedListItem =
   | { type: "header"; title: string; id: string }
@@ -30,6 +31,7 @@ export default function MedicationsScreen() {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
   const { drugs, loading, refreshDrugs } = useDrugs();
+  const { t } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
@@ -41,7 +43,7 @@ export default function MedicationsScreen() {
   const listItems = useMemo((): MedListItem[] => {
     const items: MedListItem[] = [];
     if (drugs.length > 0) {
-      items.push({ type: "header", title: `All Medications · ${drugs.length}`, id: "h-all" });
+      items.push({ type: "header", title: `${t.medications.allMedications} · ${drugs.length}`, id: "h-all" });
       drugs.forEach((drug) => {
         const refs = getRemindersForDrug(drug.id);
         items.push({ type: "med", drug, reminders: refs, id: drug.id });
@@ -57,7 +59,7 @@ export default function MedicationsScreen() {
         edges={["top"]}
       >
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>Medications</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>{t.medications.title}</Text>
         </View>
         <View style={styles.list}>
           <SkeletonCard />
@@ -74,7 +76,7 @@ export default function MedicationsScreen() {
       edges={["top"]}
     >
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>Medications</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{t.medications.title}</Text>
       </View>
 
       <FlashList
@@ -86,9 +88,9 @@ export default function MedicationsScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="pill"
-            title="No medications yet"
-            message="Add your first medication reminder to get started."
-            buttonLabel="+ Add Medication"
+            title={t.medications.noMedications}
+            message={t.medications.noMedicationsMessage}
+            buttonLabel={t.medications.addMedication}
             onPress={() => router.push("/add-reminder")}
           />
         }

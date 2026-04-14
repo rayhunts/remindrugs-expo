@@ -26,21 +26,22 @@ import { PermissionBanner } from "@/components/permission-banner";
 import { ToastSnackbar } from "@/components/toast-snackbar";
 import { ActionSheet, type ActionSheetOption } from "@/components/action-sheet";
 import { hasNotificationPermission } from "@/services/notification-service";
-import { formatDateLong, formatTime, toDateString } from "@/utils/date-helpers";
+import { formatDateLong, formatTime, getLocaleCode, toDateString } from "@/utils/date-helpers";
+import { useLanguage } from "@/contexts/language-context";
 import type { Reminder } from "@/types/reminder";
 
-function getGreeting(): { text: string; icon: string } {
+function getGreeting(t: { home: { goodMorning: string; goodAfternoon: string; goodEvening: string } }): { text: string; icon: string } {
   const hour = new Date().getHours();
-  if (hour < 12) return { text: "Good morning", icon: "weather-sunny" };
-  if (hour < 17) return { text: "Good afternoon", icon: "weather-partly-cloudy" };
-  return { text: "Good evening", icon: "weather-night" };
+  if (hour < 12) return { text: t.home.goodMorning, icon: "weather-sunny" };
+  if (hour < 17) return { text: t.home.goodAfternoon, icon: "weather-partly-cloudy" };
+  return { text: t.home.goodEvening, icon: "weather-night" };
 }
 
-function getTimePeriod(hour: number): string {
-  if (hour < 12) return "Morning";
-  if (hour < 17) return "Afternoon";
-  if (hour < 21) return "Evening";
-  return "Night";
+function getTimePeriod(hour: number, t: { home: { morning: string; afternoon: string; evening: string; night: string } }): string {
+  if (hour < 12) return t.home.morning;
+  if (hour < 17) return t.home.afternoon;
+  if (hour < 21) return t.home.evening;
+  return t.home.night;
 }
 
 type HomeListItem =
@@ -50,6 +51,7 @@ type HomeListItem =
 export default function HomeScreen() {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
+  const { t, locale } = useLanguage();
   const { todayReminders, loading } = useReminders();
   const {
     logs,
@@ -77,8 +79,8 @@ export default function HomeScreen() {
     time: string;
   } | null>(null);
 
-  const greeting = useMemo(() => getGreeting(), []);
-  const todayStr = useMemo(() => formatDateLong(new Date()), []);
+  const greeting = useMemo(() => getGreeting(t), [t]);
+  const todayStr = useMemo(() => formatDateLong(new Date(), getLocaleCode(locale)), [locale]);
   const todayDateStr = useMemo(() => toDateString(new Date()), []);
 
   const todayLogs = useMemo(
@@ -131,12 +133,12 @@ export default function HomeScreen() {
       const drug = reminder?.drugs.find((d) => d.id === drugId);
       setToast({
         visible: true,
-        message: `${drug?.name ?? "Dose"} marked as taken`,
+        message: t.home.markedAsTaken.replace("{name}", drug?.name ?? "Dose"),
         drugId: `${reminderId}:${drugId}`,
         date: toDateString(new Date()),
       });
     },
-    [markTaken, todayReminders],
+    [markTaken, todayReminders, t],
   );
 
   const handleMarkAll = useCallback(
@@ -150,12 +152,12 @@ export default function HomeScreen() {
       }
       setToast({
         visible: true,
-        message: `${reminder.name} — all doses marked as taken`,
+        message: t.home.allDosesMarkedTaken.replace("{name}", reminder.name),
         drugId: `__all__:${reminder.id}`,
         date: today,
       });
     },
-    [markTaken, takenDrugIds, skippedDrugIds],
+    [markTaken, takenDrugIds, skippedDrugIds, t],
   );
 
   const handleMarkSkipped = useCallback(
@@ -192,7 +194,7 @@ export default function HomeScreen() {
     const items: HomeListItem[] = [];
     let lastPeriod = "";
     for (const r of pending) {
-      const period = getTimePeriod(r.hour);
+      const period = getTimePeriod(r.hour, t);
       if (period !== lastPeriod) {
         items.push({ type: "period", label: period, id: `period-${period}` });
         lastPeriod = period;
@@ -202,7 +204,7 @@ export default function HomeScreen() {
     if (completed.length > 0) {
       items.push({
         type: "period",
-        label: `Completed · ${completed.length}`,
+        label: `${t.home.completed} · ${completed.length}`,
         id: "period-completed",
       });
       for (const r of completed) {
@@ -210,7 +212,7 @@ export default function HomeScreen() {
       }
     }
     return items;
-  }, [todayReminders, takenDrugIds, skippedDrugIds]);
+  }, [todayReminders, takenDrugIds, skippedDrugIds, t]);
 
   const handleLongPress = useCallback(
     (reminder: ReminderWithDrugs) => {
@@ -221,12 +223,12 @@ export default function HomeScreen() {
 
       if (!isFullyDone) {
         options.push({
-          label: "Mark All as Taken",
+          label: t.home.markAllTaken,
           icon: "check-circle-outline",
           onPress: () => handleMarkAll(reminder),
         });
         options.push({
-          label: "Skip All",
+          label: t.home.skipAll,
           icon: "minus-circle-outline",
           onPress: () => {
             const today = toDateString(new Date());
@@ -241,7 +243,7 @@ export default function HomeScreen() {
       }
 
       options.push({
-        label: "Edit Reminder",
+        label: t.home.editReminder,
         icon: "pencil-outline",
         onPress: () => router.push(`/edit-reminder/${reminder.id}`),
       });
@@ -251,7 +253,7 @@ export default function HomeScreen() {
         time: formatTime(reminder.hour, reminder.minute),
       });
     },
-    [takenDrugIds, skippedDrugIds, handleMarkAll, handleMarkSkipped],
+    [takenDrugIds, skippedDrugIds, handleMarkAll, handleMarkSkipped, t],
   );
 
   if (loading) {
@@ -320,8 +322,8 @@ export default function HomeScreen() {
                     style={[styles.progressTitle, { color: allDone ? colors.success : colors.primary }]}
                   >
                     {allDone
-                      ? "All done for today!"
-                      : `${totalDrugDoses - takenDrugCount} dose${totalDrugDoses - takenDrugCount !== 1 ? "s" : ""} remaining`}
+                      ? t.home.allDone
+                      : `${totalDrugDoses - takenDrugCount} ${totalDrugDoses - takenDrugCount !== 1 ? t.home.dosesRemaining : t.home.doseRemaining}`}
                   </Text>
                 </View>
                 <View style={[styles.progressTrack, { backgroundColor: `${colors.primary}20` }]}>
@@ -340,7 +342,7 @@ export default function HomeScreen() {
                 </View>
                 <View style={styles.progressFooter}>
                   <Text style={[styles.progressSubtitle, { color: colors.primary }]}>
-                    {takenDrugCount} of {totalDrugDoses} doses taken
+                    {takenDrugCount} {t.home.ofDosesTaken.replace("{total}", String(totalDrugDoses))}
                   </Text>
                   {monthStats.streak > 0 && (
                     <View style={[styles.streakBadge, { backgroundColor: colors.warningLight }]}>
@@ -358,9 +360,9 @@ export default function HomeScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="pill"
-            title="No meds today!"
-            message="Enjoy your day or add a new reminder."
-            buttonLabel="+ Add Reminder"
+            title={t.home.noMedsToday}
+            message={t.home.noMedsTodayMessage}
+            buttonLabel={t.home.addReminder}
             onPress={() => router.push("/add-reminder")}
           />
         }
@@ -409,12 +411,12 @@ export default function HomeScreen() {
             if (!isFullyDone) {
               opts.push(
                 {
-                  label: "Mark All as Taken",
+                  label: t.home.markAllTaken,
                   icon: "check-circle-outline",
                   onPress: () => handleMarkAll(r),
                 },
                 {
-                  label: "Skip All",
+                  label: t.home.skipAll,
                   icon: "minus-circle-outline",
                   onPress: () => {
                     const today = toDateString(new Date());
@@ -429,7 +431,7 @@ export default function HomeScreen() {
               );
             }
             opts.push({
-              label: "Edit Reminder",
+              label: t.home.editReminder,
               icon: "pencil-outline",
               onPress: () => router.push(`/edit-reminder/${r.id}`),
             });
@@ -442,7 +444,7 @@ export default function HomeScreen() {
       <ToastSnackbar
         visible={toast.visible}
         message={toast.message}
-        actionLabel="Undo"
+        actionLabel={t.common.undo}
         onAction={() => handleUndo(toast.drugId, toast.date)}
         onDismiss={() => setToast({ visible: false, message: "", drugId: "", date: "" })}
       />

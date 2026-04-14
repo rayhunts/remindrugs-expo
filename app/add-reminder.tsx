@@ -19,6 +19,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHeaderStyle } from "@/hooks/use-header-style";
 import { useReminders } from "@/hooks/use-reminders";
 import { useDrugs } from "@/hooks/use-drugs";
+import { useLanguage } from "@/contexts/language-context";
 import { DaySelector } from "@/components/day-selector";
 import { TimePickerField } from "@/components/time-picker-field";
 import { FrequencyBadge } from "@/components/frequency-badge";
@@ -35,6 +36,7 @@ export default function AddReminderScreen() {
   const colors = getColors(scheme);
   const { addReminder } = useReminders();
   const { drugs: existingDrugs, addDrug, refreshDrugs } = useDrugs();
+  const { t } = useLanguage();
   useHeaderStyle();
 
   const [name, setName] = useState("");
@@ -87,9 +89,9 @@ export default function AddReminderScreen() {
   const handleSave = useCallback(async () => {
     const trimmedName = name.trim();
     const newErrors: Record<string, string> = {};
-    if (!trimmedName) newErrors.name = "Please enter a reminder name.";
-    if (days.length === 0) newErrors.days = "Please select at least one day.";
-    if (selectedDrugIds.length === 0) newErrors.drugs = "Please select at least one medication.";
+    if (!trimmedName) newErrors.name = t.reminders.errorNameRequired;
+    if (days.length === 0) newErrors.days = t.reminders.errorDaysRequired;
+    if (selectedDrugIds.length === 0) newErrors.drugs = t.reminders.errorDrugsRequired;
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -138,7 +140,7 @@ export default function AddReminderScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: "Add Reminder", headerBackTitle: "Back" }} />
+      <Stack.Screen options={{ title: t.reminders.addReminder, headerBackTitle: t.common.back }} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -150,9 +152,9 @@ export default function AddReminderScreen() {
         >
           {/* Reminder Name */}
           <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>REMINDER NAME</Text>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t.reminders.reminderName}</Text>
             <ThemedInput
-              placeholder='e.g. "Morning Meds"'
+              placeholder={t.reminders.reminderNamePlaceholder}
               value={name}
               onChangeText={(text) => {
                 setName(text);
@@ -185,7 +187,7 @@ export default function AddReminderScreen() {
 
           {/* Medications */}
           <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>MEDICATIONS</Text>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t.reminders.medications}</Text>
 
             {/* Existing drugs as toggleable chips */}
             {existingDrugs.length > 0 && (
@@ -207,7 +209,7 @@ export default function AddReminderScreen() {
             {/* Selected drugs summary */}
             {selectedDrugIds.length > 0 && (
               <Text style={[styles.selectedCount, { color: colors.textSecondary }]}>
-                {selectedDrugIds.length} medication{selectedDrugIds.length !== 1 ? "s" : ""} selected
+                {selectedDrugIds.length} {selectedDrugIds.length === 1 ? t.reminders.medicationSelected : t.reminders.medicationsSelected}
               </Text>
             )}
 
@@ -217,14 +219,14 @@ export default function AddReminderScreen() {
                 onPress={() => setShowNewDrugForm(true)}
                 style={[styles.addDrugButton, { borderColor: colors.primary }]}
               >
-                <Text style={[styles.addDrugText, { color: colors.primary }]}>+ Add New Medication</Text>
+                <Text style={[styles.addDrugText, { color: colors.primary }]}>+ {t.reminders.addNewMedication}</Text>
               </Pressable>
             ) : (
               <View style={[styles.newDrugCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.newDrugTitle, { color: colors.textPrimary }]}>New Medication</Text>
+                <Text style={[styles.newDrugTitle, { color: colors.textPrimary }]}>{t.reminders.newMedication}</Text>
 
                 <ThemedInput
-                  placeholder="Medication name"
+                  placeholder={t.reminders.medicationNamePlaceholder}
                   value={newDrugName}
                   onChangeText={setNewDrugName}
                 />
@@ -232,13 +234,13 @@ export default function AddReminderScreen() {
                 <View style={styles.row}>
                   <ThemedInput
                     style={styles.flex1}
-                    placeholder="Dosage (e.g. 500mg)"
+                    placeholder={t.reminders.dosagePlaceholder}
                     value={newDrugDosage}
                     onChangeText={setNewDrugDosage}
                   />
                   <ThemedInput
                     style={styles.qtyInput}
-                    placeholder="Qty"
+                    placeholder={t.reminders.qtyPlaceholder}
                     value={newDrugQty > 0 ? String(newDrugQty) : ""}
                     onChangeText={(text) => {
                       const qty = parseInt(text, 10);
@@ -248,7 +250,7 @@ export default function AddReminderScreen() {
                   />
                 </View>
 
-                <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>FORM</Text>
+                <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t.reminders.form}</Text>
                 <View style={styles.formRow}>
                   {DRUG_FORMS.map((f) => {
                     const selected = newDrugForm === f.value;
@@ -281,7 +283,7 @@ export default function AddReminderScreen() {
 
                 <View style={styles.newDrugActions}>
                   <Pressable onPress={() => setShowNewDrugForm(false)} style={styles.cancelNewDrug}>
-                    <Text style={[styles.cancelNewDrugText, { color: colors.textSecondary }]}>Cancel</Text>
+                    <Text style={[styles.cancelNewDrugText, { color: colors.textSecondary }]}>{t.common.cancel}</Text>
                   </Pressable>
                   <Pressable
                     onPress={handleAddNewDrug}
@@ -292,7 +294,7 @@ export default function AddReminderScreen() {
                     ]}
                   >
                     <Text style={[styles.saveNewDrugText, { color: newDrugName.trim() ? colors.textInverse : colors.textTertiary }]}>
-                      Add
+                      {t.common.add}
                     </Text>
                   </Pressable>
                 </View>
@@ -318,7 +320,7 @@ export default function AddReminderScreen() {
             accessibilityLabel="Save reminder"
           >
             <Text style={[styles.saveText, { color: isValid ? colors.textInverse : colors.textTertiary }]}>
-              Save Reminder
+              {t.reminders.saveReminder}
             </Text>
           </Pressable>
 

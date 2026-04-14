@@ -4,6 +4,7 @@ import { getColors } from "@/constants/colors";
 import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useLanguage } from "@/contexts/language-context";
 
 interface PermissionBannerProps {
   onDismiss?: () => void;
@@ -12,6 +13,7 @@ interface PermissionBannerProps {
 export function PermissionBanner({ onDismiss }: PermissionBannerProps) {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
+  const { t } = useLanguage();
 
   return (
     <View
@@ -31,10 +33,10 @@ export function PermissionBanner({ onDismiss }: PermissionBannerProps) {
         />
         <View style={styles.textWrap}>
           <Text style={[styles.title, { color: colors.warning }]}>
-            Notifications disabled
+            {t.components.notificationsDisabled}
           </Text>
           <Text style={[styles.message, { color: colors.textSecondary }]}>
-            Remindrugs can&apos;t remind you without notifications.
+            {t.components.notificationsDisabledMessage}
           </Text>
         </View>
       </View>
@@ -51,7 +53,7 @@ export function PermissionBanner({ onDismiss }: PermissionBannerProps) {
           accessibilityLabel="Fix notification permissions"
         >
           <Text style={[styles.fixText, { color: colors.textInverse }]}>
-            Fix This
+            {t.components.fixThis}
           </Text>
         </Pressable>
         {onDismiss && (

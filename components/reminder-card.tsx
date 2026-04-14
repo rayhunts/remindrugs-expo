@@ -4,6 +4,7 @@ import { getColors } from "@/constants/colors";
 import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useLanguage } from "@/contexts/language-context";
 import { TimeDisplay } from "@/components/time-display";
 import { FrequencyBadge } from "@/components/frequency-badge";
 import { DrugChip, MoreChip } from "@/components/drug-chip";
@@ -31,9 +32,10 @@ export function ReminderCard({
 }: ReminderCardProps) {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
+  const { t } = useLanguage();
 
   const frequency = getFrequencyLabel(reminder.days);
-  const dayAbbr = getDayAbbreviations(reminder.days);
+  const dayAbbr = getDayAbbreviations(reminder.days, t.days.abbr);
 
   const totalDrugs = drugs.length;
   const takenCount = drugs.filter((d) => takenDrugIds.has(`${reminder.id}:${d.id}`)).length;
@@ -98,7 +100,7 @@ export function ReminderCard({
         <View style={styles.metaRow}>
           <TimeDisplay hour={reminder.hour} minute={reminder.minute} />
           <Text style={[styles.days, { color: colors.textTertiary }]}>
-            {frequency === "daily" ? "Every day" : dayAbbr}
+            {frequency === "daily" ? t.common.everyDay : dayAbbr}
           </Text>
         </View>
 
@@ -113,7 +115,7 @@ export function ReminderCard({
             accessibilityLabel={`Mark all in ${reminder.name} as taken`}
           >
             <Text style={[styles.takenText, { color: colors.textInverse }]}>
-              ✓ Mark All Taken
+              {t.components.markAllTaken}
             </Text>
           </Pressable>
         )}
@@ -127,7 +129,7 @@ export function ReminderCard({
             style={[styles.takenButton, { backgroundColor: colors.primary }]}
           >
             <Text style={[styles.takenText, { color: colors.textInverse }]}>
-              ✓ Mark Remaining ({totalDrugs - takenCount - skippedCount})
+              {t.components.markRemaining.replace("{count}", String(totalDrugs - takenCount - skippedCount))}
             </Text>
           </Pressable>
         )}
@@ -135,7 +137,7 @@ export function ReminderCard({
         {allDone && (
           <View style={[styles.takenBadge, { backgroundColor: colors.successLight }]}>
             <Text style={[styles.takenBadgeText, { color: colors.success }]}>
-              ✓ All Taken
+              {t.components.allTaken}
             </Text>
           </View>
         )}

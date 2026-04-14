@@ -3,21 +3,23 @@ import { getColors } from "@/constants/colors";
 import { Typography } from "@/constants/typography";
 import { Spacing } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useLanguage } from "@/contexts/language-context";
 import type { FrequencyType } from "@/types/reminder";
 
 interface FrequencyBadgeProps {
   type: FrequencyType;
 }
 
-const BADGE_LABELS: Record<FrequencyType, string> = {
-  daily: "Daily",
-  weekly: "Weekly",
-  custom: "Custom",
-};
-
 export function FrequencyBadge({ type }: FrequencyBadgeProps) {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
+  const { t } = useLanguage();
+
+  const badgeLabels = {
+    daily: t.components.frequencyDaily,
+    weekly: t.components.frequencyWeekly,
+    custom: t.components.frequencyCustom,
+  };
 
   const colorMap = {
     daily: { color: colors.success, bg: colors.successLight },
@@ -40,7 +42,7 @@ export function FrequencyBadge({ type }: FrequencyBadgeProps) {
       ]}
     >
       <Text style={[styles.text, { color }]}>
-        {BADGE_LABELS[type]}
+        {badgeLabels[type]}
       </Text>
     </View>
   );

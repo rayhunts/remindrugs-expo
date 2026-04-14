@@ -18,12 +18,14 @@ import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAdherence } from "@/hooks/use-adherence";
 import { useReminders } from "@/hooks/use-reminders";
+import { useLanguage } from "@/contexts/language-context";
 import {
   getMonthName,
   toDateString,
   isWithinLast7Days,
   isToday,
   formatTime,
+  getLocaleCode,
 } from "@/utils/date-helpers";
 import type { AdherenceLog } from "@/types/adherence";
 import type { ReminderWithDrugs } from "@/hooks/use-reminders";
@@ -35,23 +37,24 @@ function StatusBadge({
   status: string;
   colors: ReturnType<typeof getColors>;
 }) {
+  const { t } = useLanguage();
   const config = {
     taken: {
       color: colors.success,
       bg: colors.successLight,
-      label: "Taken",
+      label: t.common.taken,
       icon: "check-circle",
     },
     missed: {
       color: colors.danger,
       bg: colors.dangerLight,
-      label: "Missed",
+      label: t.common.missed,
       icon: "close-circle",
     },
     skipped: {
       color: colors.textTertiary,
       bg: colors.divider,
-      label: "Skipped",
+      label: t.common.skipped,
       icon: "minus-circle",
     },
   }[status] ?? {
@@ -82,13 +85,14 @@ export default function CalendarScreen() {
     refreshLogs,
   } = useAdherence();
   const { reminders } = useReminders();
+  const { t, locale } = useLanguage();
 
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState({
     year: today.getFullYear(),
     month: today.getMonth(),
   });
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(() => toDateString(new Date()));
   const [refreshing, setRefreshing] = useState(false);
 
   const stats = useMemo(
@@ -203,6 +207,9 @@ export default function CalendarScreen() {
       textDisabledColor: colors.textTertiary,
       monthTextColor: colors.textPrimary,
       arrowColor: colors.primary,
+      "stylesheet.calendar.main": {
+        backgroundColor: colors.card,
+      },
       "stylesheet.calendar.header": {
         dayHeader: {
           ...Typography.xs,
@@ -247,6 +254,19 @@ export default function CalendarScreen() {
           lineHeight: 32,
         },
       },
+      "stylesheet.day.multiDot": {
+        dotsContainer: {
+          flexDirection: "row" as unknown as string,
+          alignItems: "center" as unknown as string,
+          justifyContent: "center" as unknown as string,
+        },
+        dot: {
+          width: 4,
+          height: 4,
+          borderRadius: 2,
+          marginHorizontal: 1,
+        },
+      },
     }),
     [colors],
   );
@@ -265,33 +285,34 @@ export default function CalendarScreen() {
       >
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-            {getMonthName(currentMonth.year, currentMonth.month)}
+            {getMonthName(currentMonth.year, currentMonth.month, getLocaleCode(locale))}
           </Text>
         </View>
 
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { backgroundColor: colors.primaryLight, borderColor: colors.primary }]}>
             <Text style={[styles.statValueLg, { color: colors.primary }]}>{stats.adherencePercent}%</Text>
-            <Text style={[styles.statLabel, { color: colors.primary }]}>Adherence</Text>
+            <Text style={[styles.statLabel, { color: colors.primary }]}>{t.calendar.adherence}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.statIconRow}>
               <MaterialCommunityIcons name="fire" size={16} color={colors.warning} />
               <Text style={[styles.statValue, { color: colors.textPrimary }]}>{stats.streak}</Text>
             </View>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Day Streak</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t.calendar.dayStreak}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.statIconRow}>
               <MaterialCommunityIcons name="close-circle-outline" size={16} color={colors.danger} />
               <Text style={[styles.statValue, { color: colors.textPrimary }]}>{stats.missedDoses}</Text>
             </View>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Missed</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t.common.missed}</Text>
           </View>
         </View>
 
         <View style={[styles.calendarWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Calendar
+            key={scheme}
             current={`${currentMonth.year}-${String(currentMonth.month + 1).padStart(2, "0")}-01`}
             markingType="multi-dot"
             markedDates={selectedMarked}
@@ -312,7 +333,7 @@ export default function CalendarScreen() {
         {selectedDate && (
           <View style={styles.daySection}>
             <Text style={[styles.daySectionTitle, { color: colors.textPrimary }]}>
-              {new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
+              {new Date(selectedDate + "T00:00:00").toLocaleDateString(getLocaleCode(locale), {
                 weekday: "long",
                 month: "short",
                 day: "numeric",
@@ -322,12 +343,12 @@ export default function CalendarScreen() {
             {isFuture ? (
               <View style={[styles.emptyDay, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <MaterialCommunityIcons name="calendar-clock" size={32} color={colors.textTertiary} />
-                <Text style={[styles.emptyDayText, { color: colors.textTertiary }]}>No data yet for this day</Text>
+                <Text style={[styles.emptyDayText, { color: colors.textTertiary }]}>{t.calendar.noDataYet}</Text>
               </View>
             ) : selectedDateReminders.length === 0 && selectedLogs.length === 0 ? (
               <View style={[styles.emptyDay, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Text style={[styles.emptyDayText, { color: colors.textTertiary }]}>
-                  No medications scheduled for this day
+                  {t.calendar.noMedsScheduled}
                 </Text>
               </View>
             ) : (
@@ -378,7 +399,7 @@ export default function CalendarScreen() {
                                 </Text>
                                 {log?.takenAt ? (
                                   <Text style={[styles.logTime, { color: colors.textTertiary }]}>
-                                    Taken at {formatTime(new Date(log.takenAt).getHours(), new Date(log.takenAt).getMinutes())}
+                                    {t.calendar.takenAt} {formatTime(new Date(log.takenAt).getHours(), new Date(log.takenAt).getMinutes())}
                                   </Text>
                                 ) : null}
                               </View>
@@ -407,13 +428,13 @@ export default function CalendarScreen() {
                           }
                         }
                         if (count === 0) {
-                          Alert.alert("All logged", "All medications for this day already have a status.");
+                          Alert.alert(t.calendar.allLogged, t.calendar.allLoggedMessage);
                         }
                       }}
                       style={({ pressed }) => [styles.actionBtn, { backgroundColor: colors.success, opacity: pressed ? 0.7 : 1 }]}
                     >
                       <MaterialCommunityIcons name="check" size={16} color={colors.textInverse} />
-                      <Text style={[styles.actionBtnText, { color: colors.textInverse }]}>All Taken</Text>
+                      <Text style={[styles.actionBtnText, { color: colors.textInverse }]}>{t.calendar.allTaken}</Text>
                     </Pressable>
                     <Pressable
                       onPress={() => {
@@ -427,13 +448,13 @@ export default function CalendarScreen() {
                           }
                         }
                         if (count === 0) {
-                          Alert.alert("All logged", "All medications for this day already have a status.");
+                          Alert.alert(t.calendar.allLogged, t.calendar.allLoggedMessage);
                         }
                       }}
                       style={({ pressed }) => [styles.actionBtn, { backgroundColor: colors.danger, opacity: pressed ? 0.7 : 1 }]}
                     >
                       <MaterialCommunityIcons name="close" size={16} color={colors.textInverse} />
-                      <Text style={[styles.actionBtnText, { color: colors.textInverse }]}>All Missed</Text>
+                      <Text style={[styles.actionBtnText, { color: colors.textInverse }]}>{t.calendar.allMissed}</Text>
                     </Pressable>
                   </View>
                 )}
@@ -445,15 +466,15 @@ export default function CalendarScreen() {
         <View style={styles.legendRow}>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
-            <Text style={[styles.legendText, { color: colors.textSecondary }]}>All taken</Text>
+            <Text style={[styles.legendText, { color: colors.textSecondary }]}>{t.calendar.allTakenLegend}</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: colors.warning }]} />
-            <Text style={[styles.legendText, { color: colors.textSecondary }]}>Partial</Text>
+            <Text style={[styles.legendText, { color: colors.textSecondary }]}>{t.calendar.partial}</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: colors.danger }]} />
-            <Text style={[styles.legendText, { color: colors.textSecondary }]}>Missed</Text>
+            <Text style={[styles.legendText, { color: colors.textSecondary }]}>{t.calendar.missed}</Text>
           </View>
         </View>
 

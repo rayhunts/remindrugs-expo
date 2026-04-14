@@ -19,6 +19,7 @@ import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHeaderStyle } from "@/hooks/use-header-style";
 import { useDrugs } from "@/hooks/use-drugs";
+import { useLanguage } from "@/contexts/language-context";
 import { ThemedInput } from "@/components/themed-input";
 import { formatTime } from "@/utils/date-helpers";
 import { DRUG_FORMS, PILL_COLORS } from "@/constants/drug-forms";
@@ -30,6 +31,7 @@ export default function EditDrugScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getById, updateDrug, deleteDrug, getRemindersFor } = useDrugs();
+  const { t } = useLanguage();
   useHeaderStyle();
 
   const [loading, setLoading] = useState(true);
@@ -47,7 +49,7 @@ export default function EditDrugScreen() {
     if (!id) return;
     const drug = getById(id);
     if (!drug) {
-      Alert.alert("Not found", "This medication doesn't exist.");
+      Alert.alert(t.common.notFound, t.editDrug.notFoundMessage);
       router.back();
       return;
     }
@@ -88,12 +90,12 @@ export default function EditDrugScreen() {
   const handleDelete = useCallback(() => {
     if (!id) return;
     Alert.alert(
-      "Delete Medication",
-      `Delete "${name}"? This will also remove it from all reminders.`,
+      t.editDrug.deleteMedicationTitle,
+      t.editDrug.deleteMedicationMessage.replace("{name}", name),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t.common.cancel, style: "cancel" },
         {
-          text: "Delete",
+          text: t.common.delete,
           style: "destructive",
           onPress: () => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -115,7 +117,7 @@ export default function EditDrugScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: "Edit Medication", headerBackTitle: "Back" }} />
+      <Stack.Screen options={{ title: t.editDrug.editMedication, headerBackTitle: t.common.back }} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -127,9 +129,9 @@ export default function EditDrugScreen() {
         >
           {/* Name */}
           <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>NAME</Text>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t.editDrug.name}</Text>
             <ThemedInput
-              placeholder="Medication name"
+              placeholder={t.reminders.medicationNamePlaceholder}
               value={name}
               onChangeText={setName}
             />
@@ -140,13 +142,13 @@ export default function EditDrugScreen() {
             <View style={styles.row}>
               <ThemedInput
                 style={styles.flex1}
-                placeholder="Dosage (e.g. 500mg)"
+                placeholder={t.reminders.dosagePlaceholder}
                 value={dosage}
                 onChangeText={setDosage}
               />
               <ThemedInput
                 style={styles.qtyInput}
-                placeholder="Qty"
+                placeholder={t.reminders.qtyPlaceholder}
                 value={quantity > 0 ? String(quantity) : ""}
                 onChangeText={(text) => {
                   const qty = parseInt(text, 10);
@@ -159,7 +161,7 @@ export default function EditDrugScreen() {
 
           {/* Form */}
           <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>FORM</Text>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t.reminders.form}</Text>
             <View style={styles.formRow}>
               {DRUG_FORMS.map((f) => {
                 const selected = form === f.value;
@@ -198,9 +200,9 @@ export default function EditDrugScreen() {
 
           {/* Notes */}
           <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>NOTES</Text>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t.editDrug.notes}</Text>
             <ThemedInput
-              placeholder="Notes (optional, e.g. take with food)"
+              placeholder={t.components.notesPlaceholder}
               value={notes}
               onChangeText={setNotes}
             />
@@ -208,7 +210,7 @@ export default function EditDrugScreen() {
 
           {/* Color */}
           <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>COLOR</Text>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t.editDrug.color}</Text>
             <View style={styles.colorRow}>
               {PILL_COLORS.map((c) => {
                 const selected = color === c;
@@ -235,18 +237,18 @@ export default function EditDrugScreen() {
 
           {/* Stock Tracking */}
           <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>STOCK TRACKING</Text>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t.editDrug.stockTracking}</Text>
             <View style={styles.row}>
               <ThemedInput
                 style={styles.flex1}
-                placeholder="Pills remaining"
+                placeholder={t.editDrug.stockPlaceholder}
                 value={currentStock}
                 onChangeText={setCurrentStock}
                 keyboardType="numeric"
               />
               <ThemedInput
                 style={styles.flex1}
-                placeholder="Alert at"
+                placeholder={t.editDrug.alertPlaceholder}
                 value={stockThreshold}
                 onChangeText={setStockThreshold}
                 keyboardType="numeric"
@@ -258,7 +260,7 @@ export default function EditDrugScreen() {
           {linkedReminders.length > 0 && (
             <View style={styles.section}>
               <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-                USED IN REMINDERS
+                {t.medications.usedInReminders}
               </Text>
               {linkedReminders.map((r) => (
                 <View
@@ -288,13 +290,13 @@ export default function EditDrugScreen() {
             ]}
           >
             <Text style={[styles.saveText, { color: isValid ? colors.textInverse : colors.textTertiary }]}>
-              Save Changes
+              {t.reminders.saveChanges}
             </Text>
           </Pressable>
 
           {/* Delete */}
           <Pressable onPress={handleDelete} style={({ pressed }) => [styles.deleteButton, { opacity: pressed ? 0.7 : 1 }]}>
-            <Text style={[styles.deleteText, { color: colors.danger }]}>Delete Medication</Text>
+            <Text style={[styles.deleteText, { color: colors.danger }]}>{t.editDrug.deleteMedication}</Text>
           </Pressable>
 
           <View style={styles.bottomSpacer} />

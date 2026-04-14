@@ -12,6 +12,7 @@ import { getColors } from "@/constants/colors";
 import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useLanguage } from "@/contexts/language-context";
 
 export interface ActionSheetOption {
   label: string;
@@ -28,6 +29,7 @@ interface ActionSheetProps {
 export function ActionSheet({ options, onCancel }: ActionSheetProps) {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
+  const { t } = useLanguage();
   const onCancelRef = useRef(onCancel);
   onCancelRef.current = onCancel;
 
@@ -121,7 +123,7 @@ export function ActionSheet({ options, onCancel }: ActionSheetProps) {
           style={({ pressed }) => [styles.cancelButton, { opacity: pressed ? 0.7 : 1 }]}
         >
           <Text style={[styles.cancelText, { color: colors.textSecondary }]}>
-            Cancel
+            {t.common.cancel}
           </Text>
         </Pressable>
       </Animated.View>

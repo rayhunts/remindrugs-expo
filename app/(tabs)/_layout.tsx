@@ -2,10 +2,12 @@ import { Tabs } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { getColors } from "@/constants/colors";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useLanguage } from "@/contexts/language-context";
 
 export default function TabLayout() {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
+  const { t } = useLanguage();
 
   return (
     <Tabs
@@ -22,7 +24,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: t.tabs.home,
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="home-variant" color={color} size={size} />
           ),
@@ -31,7 +33,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="medications"
         options={{
-          title: "Medications",
+          title: t.tabs.medications,
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="pill" color={color} size={size} />
           ),
@@ -40,7 +42,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="calendar"
         options={{
-          title: "Calendar",
+          title: t.tabs.calendar,
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="calendar-month" color={color} size={size} />
           ),
@@ -49,7 +51,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Settings",
+          title: t.tabs.settings,
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="cog-outline" color={color} size={size} />
           ),

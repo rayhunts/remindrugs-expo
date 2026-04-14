@@ -24,10 +24,8 @@ export function getTodayWeekday(): Weekday {
   return new Date().getDay() as Weekday;
 }
 
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-export function getDayAbbreviations(days: Weekday[]): string {
-  return days.map((d) => DAY_NAMES[d]).join(" ");
+export function getDayAbbreviations(days: Weekday[], abbr: readonly string[]): string {
+  return days.map((d) => abbr[d]).join(" ");
 }
 
 export function toDateString(date: Date): string {
@@ -79,16 +77,16 @@ export function getMonthAdherencePercent(logs: AdherenceLog[]): number {
   return Math.round((taken / logs.length) * 100);
 }
 
-export function formatDateLong(date: Date): string {
-  return date.toLocaleDateString("en-US", {
+export function formatDateLong(date: Date, locale: string = "en-US"): string {
+  return date.toLocaleDateString(locale, {
     weekday: "long",
     month: "long",
     day: "numeric",
   });
 }
 
-export function getMonthName(year: number, month: number): string {
-  return new Date(year, month).toLocaleDateString("en-US", {
+export function getMonthName(year: number, month: number, locale: string = "en-US"): string {
+  return new Date(year, month).toLocaleDateString(locale, {
     month: "long",
     year: "numeric",
   });
@@ -108,4 +106,8 @@ export function isWithinLast7Days(dateStr: string): boolean {
 
 export function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
+}
+
+export function getLocaleCode(locale: string): string {
+  return locale === "id" ? "id-ID" : "en-US";
 }

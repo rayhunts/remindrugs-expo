@@ -4,6 +4,7 @@ import { getColors } from "@/constants/colors";
 import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useLanguage } from "@/contexts/language-context";
 import { DRUG_FORMS, PILL_COLORS } from "@/constants/drug-forms";
 import type { Drug, DrugForm } from "@/types/reminder";
 
@@ -24,6 +25,7 @@ export function DrugFormRow({
 }: DrugFormRowProps) {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
+  const { t } = useLanguage();
 
   return (
     <View
@@ -48,7 +50,7 @@ export function DrugFormRow({
             </Text>
           </View>
           <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-            Drug {index + 1}
+            {t.components.drug} {index + 1}
           </Text>
         </View>
         {canDelete && (
@@ -58,7 +60,7 @@ export function DrugFormRow({
             accessibilityLabel={`Remove drug ${index + 1}`}
           >
             <Text style={[styles.deleteText, { color: colors.danger }]}>
-              Remove
+              {t.common.remove}
             </Text>
           </Pressable>
         )}
@@ -73,7 +75,7 @@ export function DrugFormRow({
             borderColor: colors.border,
           },
         ]}
-        placeholder="Drug name"
+        placeholder={t.components.drugName}
         placeholderTextColor={colors.textTertiary}
         value={drug.name}
         onChangeText={(text) => onUpdate(index, { name: text })}
@@ -91,7 +93,7 @@ export function DrugFormRow({
               borderColor: colors.border,
             },
           ]}
-          placeholder="Dosage (e.g. 500mg)"
+          placeholder={t.reminders.dosagePlaceholder}
           placeholderTextColor={colors.textTertiary}
           value={drug.dosage}
           onChangeText={(text) => onUpdate(index, { dosage: text })}
@@ -107,7 +109,7 @@ export function DrugFormRow({
               borderColor: colors.border,
             },
           ]}
-          placeholder="Qty"
+          placeholder={t.reminders.qtyPlaceholder}
           placeholderTextColor={colors.textTertiary}
           value={drug.quantity > 0 ? String(drug.quantity) : ""}
           onChangeText={(text) => {
@@ -120,7 +122,7 @@ export function DrugFormRow({
       </View>
 
       <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-        Form
+        {t.reminders.form}
       </Text>
       <View style={styles.formRow}>
         {DRUG_FORMS.map((form) => {
@@ -179,7 +181,7 @@ export function DrugFormRow({
             borderColor: colors.border,
           },
         ]}
-        placeholder="Notes (optional, e.g. take with food)"
+        placeholder={t.components.notesPlaceholder}
         placeholderTextColor={colors.textTertiary}
         value={drug.notes ?? ""}
         onChangeText={(text) => onUpdate(index, { notes: text || undefined })}
@@ -187,7 +189,7 @@ export function DrugFormRow({
       />
 
       <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-        Color
+        {t.editDrug.color}
       </Text>
       <View style={styles.colorRow}>
         {PILL_COLORS.map((color) => {
@@ -221,7 +223,7 @@ export function DrugFormRow({
       </View>
 
       <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-        Stock Tracking (optional)
+        {t.components.stockTracking}
       </Text>
       <View style={styles.row}>
         <TextInput
@@ -234,7 +236,7 @@ export function DrugFormRow({
               borderColor: colors.border,
             },
           ]}
-          placeholder="Pills remaining"
+          placeholder={t.components.pillsRemaining}
           placeholderTextColor={colors.textTertiary}
           value={
             drug.currentStock !== undefined
@@ -260,7 +262,7 @@ export function DrugFormRow({
               borderColor: colors.border,
             },
           ]}
-          placeholder="Alert at"
+          placeholder={t.components.alertAt}
           placeholderTextColor={colors.textTertiary}
           value={
             drug.stockThreshold !== undefined

@@ -4,6 +4,7 @@ import { getColors } from "@/constants/colors";
 import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useLanguage } from "@/contexts/language-context";
 import { formatTime } from "@/utils/date-helpers";
 import type { Drug, Reminder } from "@/types/reminder";
 
@@ -27,6 +28,7 @@ interface MedicationCardProps {
 export function MedicationCard({ drug, reminders, onPress }: MedicationCardProps) {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
+  const { t } = useLanguage();
 
   const hasLowStock =
     drug.currentStock !== undefined &&
@@ -65,7 +67,7 @@ export function MedicationCard({ drug, reminders, onPress }: MedicationCardProps
         </View>
 
         <Text style={[styles.dosage, { color: colors.textSecondary }]}>
-          {drug.dosage} · {drug.quantity}x per dose
+          {drug.dosage} · {drug.quantity}{t.medications.perDose}
         </Text>
 
         {drug.currentStock !== undefined && (
@@ -78,8 +80,8 @@ export function MedicationCard({ drug, reminders, onPress }: MedicationCardProps
             <Text
               style={[styles.stockText, { color: hasLowStock ? colors.danger : colors.textTertiary }]}
             >
-              {drug.currentStock} remaining
-              {drug.stockThreshold !== undefined ? ` (alert at ${drug.stockThreshold})` : ""}
+              {drug.currentStock} {t.common.remaining}
+              {drug.stockThreshold !== undefined ? ` (${t.editDrug.alertPlaceholder.replace("{threshold}", String(drug.stockThreshold))})` : ""}
             </Text>
           </View>
         )}
@@ -87,7 +89,7 @@ export function MedicationCard({ drug, reminders, onPress }: MedicationCardProps
         {hasLowStock && (
           <View style={[styles.refillBadge, { backgroundColor: colors.dangerLight }]}>
             <MaterialCommunityIcons name="alert-circle" size={12} color={colors.danger} />
-            <Text style={[styles.refillText, { color: colors.danger }]}> Low Stock</Text>
+            <Text style={[styles.refillText, { color: colors.danger }]}> {t.medications.lowStock}</Text>
           </View>
         )}
 
