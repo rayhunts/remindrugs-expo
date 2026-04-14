@@ -7,22 +7,26 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { TimeDisplay } from "@/components/time-display";
 import { FrequencyBadge } from "@/components/frequency-badge";
 import { DrugChip, MoreChip } from "@/components/drug-chip";
-import type { Reminder } from "@/types/reminder";
+import type { Drug, Reminder } from "@/types/reminder";
 import { getFrequencyLabel, getDayAbbreviations } from "@/utils/date-helpers";
 
 interface ReminderCardProps {
   reminder: Reminder;
-  isTaken: boolean;
-  isSkipped?: boolean;
-  onMarkTaken: () => void;
+  drugs: Drug[];
+  takenDrugIds: Set<string>;
+  skippedDrugIds: Set<string>;
+  onMarkDrug: (drugId: string) => void;
+  onMarkAll: () => void;
   onLongPress?: () => void;
 }
 
 export function ReminderCard({
   reminder,
-  isTaken,
-  isSkipped = false,
-  onMarkTaken,
+  drugs,
+  takenDrugIds,
+  skippedDrugIds,
+  onMarkDrug,
+  onMarkAll,
   onLongPress,
 }: ReminderCardProps) {
   const scheme = useColorScheme();
@@ -31,15 +35,14 @@ export function ReminderCard({
   const frequency = getFrequencyLabel(reminder.days) as "daily" | "weekly" | "custom";
   const dayAbbr = getDayAbbreviations(reminder.days);
 
-  const handleMarkTaken = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    onMarkTaken();
-  };
+  const totalDrugs = drugs.length;
+  const takenCount = drugs.filter((d) => takenDrugIds.has(d.id)).length;
+  const skippedCount = drugs.filter((d) => skippedDrugIds.has(d.id)).length;
+  const allDone = takenCount === totalDrugs;
+  const someDone = takenCount > 0 || skippedCount > 0;
+  const noneDone = takenCount === 0 && skippedCount === 0;
 
-  const displayedDrugs = reminder.drugs.slice(0, 3);
-  const moreCount = reminder.drugs.length - 3;
-
-  const stripeColor = isTaken ? colors.success : isSkipped ? colors.textTertiary : colors.primary;
+  const stripeColor = allDone ? colors.success : someDone ? colors.warning : colors.primary;
 
   return (
     <Pressable
@@ -47,17 +50,16 @@ export function ReminderCard({
       style={[
         styles.card,
         {
-          backgroundColor: isTaken
+          backgroundColor: allDone
             ? colors.successLight
-            : isSkipped
+            : someDone
               ? colors.background
               : colors.card,
           borderColor: colors.border,
-          opacity: isTaken || isSkipped ? 0.8 : 1,
+          opacity: allDone ? 0.85 : 1,
         },
       ]}
     >
-      {/* Left stripe */}
       <View style={[styles.stripe, { backgroundColor: stripeColor }]} />
 
       <View style={styles.content}>
@@ -66,11 +68,7 @@ export function ReminderCard({
           <Text
             style={[
               styles.name,
-              {
-                color: isTaken
-                  ? colors.success
-                  : colors.textPrimary,
-              },
+              { color: allDone ? colors.success : colors.textPrimary },
             ]}
           >
             {reminder.name}
@@ -78,17 +76,22 @@ export function ReminderCard({
           <FrequencyBadge type={frequency} />
         </View>
 
-        {/* Drug chips */}
+        {/* Drug chips — checkable */}
         <View style={styles.drugRow}>
-          {displayedDrugs.map((drug) => (
+          {drugs.slice(0, 3).map((drug) => (
             <DrugChip
               key={drug.id}
               name={drug.name}
               dosage={drug.dosage}
               color={drug.color}
+              checked={takenDrugIds.has(drug.id)}
+              onToggle={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onMarkDrug(drug.id);
+              }}
             />
           ))}
-          {moreCount > 0 && <MoreChip count={moreCount} />}
+          {drugs.length > 3 && <MoreChip count={drugs.length - 3} />}
         </View>
 
         {/* Time + days row */}
@@ -99,44 +102,40 @@ export function ReminderCard({
           </Text>
         </View>
 
-        {/* Mark as taken */}
-        {!isTaken && !isSkipped && (
+        {/* Actions */}
+        {noneDone && (
           <Pressable
-            onPress={handleMarkTaken}
-            style={[
-              styles.takenButton,
-              { backgroundColor: colors.success },
-            ]}
-            accessibilityLabel={`Mark ${reminder.name} as taken`}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              onMarkAll();
+            }}
+            style={[styles.takenButton, { backgroundColor: colors.success }]}
+            accessibilityLabel={`Mark all in ${reminder.name} as taken`}
           >
             <Text style={[styles.takenText, { color: colors.textInverse }]}>
-              ✓ Mark as Taken
+              ✓ Mark All Taken
             </Text>
           </Pressable>
         )}
 
-        {isTaken && (
-          <View
-            style={[
-              styles.takenBadge,
-              { backgroundColor: colors.successLight },
-            ]}
+        {someDone && !allDone && (
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              onMarkAll();
+            }}
+            style={[styles.takenButton, { backgroundColor: colors.primary }]}
           >
-            <Text style={[styles.takenBadgeText, { color: colors.success }]}>
-              ✓ Taken
+            <Text style={[styles.takenText, { color: colors.textInverse }]}>
+              ✓ Mark Remaining ({totalDrugs - takenCount - skippedCount})
             </Text>
-          </View>
+          </Pressable>
         )}
 
-        {isSkipped && !isTaken && (
-          <View
-            style={[
-              styles.takenBadge,
-              { backgroundColor: colors.divider },
-            ]}
-          >
-            <Text style={[styles.takenBadgeText, { color: colors.textTertiary }]}>
-              — Skipped
+        {allDone && (
+          <View style={[styles.takenBadge, { backgroundColor: colors.successLight }]}>
+            <Text style={[styles.takenBadgeText, { color: colors.success }]}>
+              ✓ All Taken
             </Text>
           </View>
         )}
@@ -153,9 +152,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginBottom: Spacing.md,
   },
-  stripe: {
-    width: 4,
-  },
+  stripe: { width: 4 },
   content: {
     flex: 1,
     padding: Spacing.md,
