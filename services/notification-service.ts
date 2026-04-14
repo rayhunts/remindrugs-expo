@@ -25,9 +25,23 @@ export async function setupNotificationChannel(): Promise<void> {
       name: "Medication Reminders",
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
-      sound: "default",
+      sound: "default" as unknown as string,
     });
   }
+
+  // iOS notification action categories (no-op on Android)
+  await Notifications.setNotificationCategoryAsync("reminder-actions", [
+    {
+      identifier: "mark-done",
+      buttonTitle: "Done",
+      options: {} as any,
+    },
+    {
+      identifier: "snooze",
+      buttonTitle: "Snooze 15m",
+      options: {} as any,
+    },
+  ]);
 }
 
 // ── Permissions ─────────────────────────────────────────────────────────────
@@ -62,6 +76,7 @@ async function scheduleForDay(
       body: buildNotificationBody(reminder),
       sound: true,
       data: { reminderId: reminder.id },
+      categoryIdentifier: "reminder-actions",
     },
     trigger: {
       type: SchedulableTriggerInputTypes.WEEKLY,
@@ -98,6 +113,31 @@ export async function rescheduleReminder(
 ): Promise<string[]> {
   await cancelReminder(reminder.notificationIds);
   return scheduleReminder(reminder);
+}
+
+// ── Snooze (one-time notification 15 minutes from now) ─────────────────────
+
+export async function scheduleSnooze(
+  reminder: Reminder,
+): Promise<string> {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() + 15);
+
+  const id = await Notifications.scheduleNotificationAsync({
+    content: {
+      title: `Snoozed: ${reminder.name}`,
+      body: buildNotificationBody(reminder),
+      sound: true,
+      data: { reminderId: reminder.id, type: "snooze" },
+      categoryIdentifier: "reminder-actions",
+    },
+    trigger: {
+      type: SchedulableTriggerInputTypes.DATE,
+      channelId: "remindrugs-channel",
+      date: new Date(Date.now() + 15 * 60 * 1000),
+    } as any,
+  });
+  return id;
 }
 
 // ── Refill reminder ─────────────────────────────────────────────────────────
