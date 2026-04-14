@@ -26,7 +26,7 @@ import {
   formatTime,
 } from "@/utils/date-helpers";
 import type { AdherenceLog } from "@/types/adherence";
-import type { Reminder } from "@/types/reminder";
+import type { ReminderWithDrugs } from "@/hooks/use-reminders";
 
 function StatusBadge({
   status,
@@ -63,14 +63,8 @@ function StatusBadge({
 
   return (
     <View style={[styles.statusBadge, { backgroundColor: config.bg }]}>
-      <MaterialCommunityIcons
-        name={config.icon as any}
-        size={12}
-        color={config.color}
-      />
-      <Text style={[styles.statusLabel, { color: config.color }]}>
-        {config.label}
-      </Text>
+      <MaterialCommunityIcons name={config.icon as any} size={12} color={config.color} />
+      <Text style={[styles.statusLabel, { color: config.color }]}>{config.label}</Text>
     </View>
   );
 }
@@ -112,7 +106,6 @@ export default function CalendarScreen() {
     [selectedDate, getLogsForDate],
   );
 
-  // Get reminders scheduled for the selected date
   const selectedDateReminders = useMemo(() => {
     if (!selectedDate) return [];
     const d = new Date(selectedDate + "T00:00:00");
@@ -126,10 +119,11 @@ export default function CalendarScreen() {
     });
   }, [selectedDate, reminders]);
 
+  // Key by drugId instead of reminderId
   const selectedLogMap = useMemo(() => {
     const map = new Map<string, AdherenceLog>();
     for (const log of selectedLogs) {
-      map.set(log.reminderId, log);
+      map.set(log.drugId, log);
     }
     return map;
   }, [selectedLogs]);
@@ -165,13 +159,13 @@ export default function CalendarScreen() {
     [selectedDate],
   );
 
-  const handleMarkDay = useCallback(
-    (reminderId: string, status: "taken" | "missed" | "skipped") => {
+  const handleMarkDrug = useCallback(
+    (reminderId: string, drugId: string, status: "taken" | "missed" | "skipped") => {
       if (!selectedDate) return;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      if (status === "taken") markTaken(reminderId, selectedDate);
-      else if (status === "missed") markMissed(reminderId, selectedDate);
-      else markSkipped(reminderId, selectedDate);
+      if (status === "taken") markTaken(reminderId, drugId, selectedDate);
+      else if (status === "missed") markMissed(reminderId, drugId, selectedDate);
+      else markSkipped(reminderId, drugId, selectedDate);
     },
     [selectedDate, markTaken, markMissed, markSkipped],
   );
@@ -256,94 +250,38 @@ export default function CalendarScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
             {getMonthName(currentMonth.year, currentMonth.month)}
           </Text>
         </View>
 
-        {/* Stats Row */}
         <View style={styles.statsRow}>
-          <View
-            style={[
-              styles.statCard,
-              {
-                backgroundColor: colors.primaryLight,
-                borderColor: colors.primary,
-              },
-            ]}
-          >
-            <Text style={[styles.statValue, { color: colors.primary }]}>
-              {stats.adherencePercent}%
-            </Text>
-            <Text style={[styles.statLabel, { color: colors.primary }]}>
-              Adherence
-            </Text>
+          <View style={[styles.statCard, { backgroundColor: colors.primaryLight, borderColor: colors.primary }]}>
+            <Text style={[styles.statValue, { color: colors.primary }]}>{stats.adherencePercent}%</Text>
+            <Text style={[styles.statLabel, { color: colors.primary }]}>Adherence</Text>
           </View>
-          <View
-            style={[
-              styles.statCard,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-              },
-            ]}
-          >
+          <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.statIconRow}>
-              <MaterialCommunityIcons
-                name="fire"
-                size={16}
-                color={colors.warning}
-              />
-              <Text style={[styles.statValue, { color: colors.textPrimary }]}>
-                {stats.streak}
-              </Text>
+              <MaterialCommunityIcons name="fire" size={16} color={colors.warning} />
+              <Text style={[styles.statValue, { color: colors.textPrimary }]}>{stats.streak}</Text>
             </View>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-              Day Streak
-            </Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Day Streak</Text>
           </View>
-          <View
-            style={[
-              styles.statCard,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-              },
-            ]}
-          >
+          <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.statIconRow}>
-              <MaterialCommunityIcons
-                name="close-circle-outline"
-                size={16}
-                color={colors.danger}
-              />
-              <Text style={[styles.statValue, { color: colors.textPrimary }]}>
-                {stats.missedDoses}
-              </Text>
+              <MaterialCommunityIcons name="close-circle-outline" size={16} color={colors.danger} />
+              <Text style={[styles.statValue, { color: colors.textPrimary }]}>{stats.missedDoses}</Text>
             </View>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-              Missed
-            </Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Missed</Text>
           </View>
         </View>
 
-        {/* Calendar */}
-        <View
-          style={[
-            styles.calendarWrap,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
+        <View style={[styles.calendarWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Calendar
             current={`${currentMonth.year}-${String(currentMonth.month + 1).padStart(2, "0")}-01`}
             markingType="multi-dot"
@@ -362,12 +300,9 @@ export default function CalendarScreen() {
           />
         </View>
 
-        {/* Selected Day Detail */}
         {selectedDate && (
           <View style={styles.daySection}>
-            <Text
-              style={[styles.daySectionTitle, { color: colors.textPrimary }]}
-            >
+            <Text style={[styles.daySectionTitle, { color: colors.textPrimary }]}>
               {new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
                 weekday: "long",
                 month: "short",
@@ -376,28 +311,12 @@ export default function CalendarScreen() {
             </Text>
 
             {isFuture ? (
-              <View
-                style={[
-                  styles.emptyDay,
-                  { backgroundColor: colors.card, borderColor: colors.border },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name="calendar-clock"
-                  size={32}
-                  color={colors.textTertiary}
-                />
-                <Text style={[styles.emptyDayText, { color: colors.textTertiary }]}>
-                  No data yet for this day
-                </Text>
+              <View style={[styles.emptyDay, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <MaterialCommunityIcons name="calendar-clock" size={32} color={colors.textTertiary} />
+                <Text style={[styles.emptyDayText, { color: colors.textTertiary }]}>No data yet for this day</Text>
               </View>
             ) : selectedDateReminders.length === 0 && selectedLogs.length === 0 ? (
-              <View
-                style={[
-                  styles.emptyDay,
-                  { backgroundColor: colors.card, borderColor: colors.border },
-                ]}
-              >
+              <View style={[styles.emptyDay, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Text style={[styles.emptyDayText, { color: colors.textTertiary }]}>
                   No medications scheduled for this day
                 </Text>
@@ -405,108 +324,107 @@ export default function CalendarScreen() {
             ) : (
               <View style={styles.logList}>
                 {selectedDateReminders.map((reminder) => {
-                  const log = selectedLogMap.get(reminder.id);
-                  const drugNames = reminder.drugs
-                    .slice(0, 2)
-                    .map((d) => d.name)
-                    .join(", ");
-                  const moreCount = reminder.drugs.length - 2;
-
                   return (
-                    <View
-                      key={reminder.id}
-                      style={[
-                        styles.logItem,
-                        { backgroundColor: colors.card, borderColor: colors.border },
-                      ]}
-                    >
-                      <View style={styles.logLeft}>
-                        <MaterialCommunityIcons
-                          name={
-                            log?.status === "taken"
-                              ? "check-circle"
-                              : log?.status === "missed"
-                                ? "close-circle"
-                                : log?.status === "skipped"
-                                  ? "minus-circle"
-                                  : "clock-outline"
-                          }
-                          size={20}
-                          color={
-                            log?.status === "taken"
-                              ? colors.success
-                              : log?.status === "missed"
-                                ? colors.danger
-                                : log?.status === "skipped"
-                                  ? colors.textTertiary
-                                  : colors.primary
-                          }
-                        />
-                        <View style={styles.logInfo}>
-                          <Text style={[styles.logReminder, { color: colors.textPrimary }]}>
-                            {reminder.name}
-                          </Text>
-                          <Text style={[styles.logDrugs, { color: colors.textSecondary }]} numberOfLines={1}>
-                            {drugNames}
-                            {moreCount > 0 ? ` +${moreCount}` : ""}
-                          </Text>
-                          <Text style={[styles.logTime, { color: colors.textTertiary }]}>
-                            {formatTime(reminder.hour, reminder.minute)}
-                            {log?.takenAt
-                              ? ` · Taken at ${formatTime(new Date(log.takenAt).getHours(), new Date(log.takenAt).getMinutes())}`
-                              : ""}
-                          </Text>
-                        </View>
+                    <View key={reminder.id} style={styles.reminderGroup}>
+                      <View style={styles.reminderGroupHeader}>
+                        <Text style={[styles.reminderGroupName, { color: colors.textPrimary }]}>
+                          {reminder.name}
+                        </Text>
+                        <Text style={[styles.reminderGroupTime, { color: colors.textTertiary }]}>
+                          {formatTime(reminder.hour, reminder.minute)}
+                        </Text>
                       </View>
-                      {log ? (
-                        <StatusBadge status={log.status} colors={colors} />
-                      ) : null}
+                      {reminder.drugs.map((drug) => {
+                        const log = selectedLogMap.get(drug.id);
+                        return (
+                          <View
+                            key={drug.id}
+                            style={[styles.logItem, { backgroundColor: colors.card, borderColor: colors.border }]}
+                          >
+                            <View style={styles.logLeft}>
+                              <MaterialCommunityIcons
+                                name={
+                                  log?.status === "taken"
+                                    ? "check-circle"
+                                    : log?.status === "missed"
+                                      ? "close-circle"
+                                      : log?.status === "skipped"
+                                        ? "minus-circle"
+                                        : "clock-outline"
+                                }
+                                size={20}
+                                color={
+                                  log?.status === "taken"
+                                    ? colors.success
+                                    : log?.status === "missed"
+                                      ? colors.danger
+                                      : log?.status === "skipped"
+                                        ? colors.textTertiary
+                                        : colors.primary
+                                }
+                              />
+                              <View style={styles.logInfo}>
+                                <Text style={[styles.logDrugName, { color: colors.textPrimary }]}>
+                                  {drug.name} {drug.dosage}
+                                </Text>
+                                {log?.takenAt ? (
+                                  <Text style={[styles.logTime, { color: colors.textTertiary }]}>
+                                    Taken at {formatTime(new Date(log.takenAt).getHours(), new Date(log.takenAt).getMinutes())}
+                                  </Text>
+                                ) : null}
+                              </View>
+                            </View>
+                            {log ? (
+                              <StatusBadge status={log.status} colors={colors} />
+                            ) : null}
+                          </View>
+                        );
+                      })}
                     </View>
                   );
                 })}
 
-                {/* Retroactive action buttons */}
                 {isPastAndEditable && (
                   <View style={styles.actionRow}>
                     <Pressable
                       onPress={() => {
-                        const unlogged = selectedDateReminders.filter(
-                          (r) => !selectedLogMap.has(r.id),
-                        );
-                        if (unlogged.length === 0) {
-                          Alert.alert("All logged", "All reminders for this day already have a status.");
-                          return;
+                        let count = 0;
+                        for (const r of selectedDateReminders) {
+                          for (const drug of r.drugs) {
+                            if (!selectedLogMap.has(drug.id)) {
+                              handleMarkDrug(r.id, drug.id, "taken");
+                              count++;
+                            }
+                          }
                         }
-                        for (const r of unlogged) {
-                          handleMarkDay(r.id, "taken");
+                        if (count === 0) {
+                          Alert.alert("All logged", "All medications for this day already have a status.");
                         }
                       }}
                       style={[styles.actionBtn, { backgroundColor: colors.success }]}
                     >
                       <MaterialCommunityIcons name="check" size={16} color={colors.textInverse} />
-                      <Text style={[styles.actionBtnText, { color: colors.textInverse }]}>
-                        All Taken
-                      </Text>
+                      <Text style={[styles.actionBtnText, { color: colors.textInverse }]}>All Taken</Text>
                     </Pressable>
                     <Pressable
                       onPress={() => {
-                        const unlogged = selectedDateReminders.filter(
-                          (r) => !selectedLogMap.has(r.id),
-                        );
-                        if (unlogged.length === 0) {
-                          Alert.alert("All logged", "All reminders for this day already have a status.");
-                          return;
+                        let count = 0;
+                        for (const r of selectedDateReminders) {
+                          for (const drug of r.drugs) {
+                            if (!selectedLogMap.has(drug.id)) {
+                              handleMarkDrug(r.id, drug.id, "missed");
+                              count++;
+                            }
+                          }
                         }
-                        for (const r of unlogged) {
-                          handleMarkDay(r.id, "missed");
+                        if (count === 0) {
+                          Alert.alert("All logged", "All medications for this day already have a status.");
                         }
                       }}
                       style={[styles.actionBtn, { backgroundColor: colors.danger }]}
                     >
                       <MaterialCommunityIcons name="close" size={16} color={colors.textInverse} />
-                      <Text style={[styles.actionBtnText, { color: colors.textInverse }]}>
-                        All Missed
-                      </Text>
+                      <Text style={[styles.actionBtnText, { color: colors.textInverse }]}>All Missed</Text>
                     </Pressable>
                   </View>
                 )}
@@ -515,7 +433,6 @@ export default function CalendarScreen() {
           </View>
         )}
 
-        {/* Legend */}
         <View style={styles.legendRow}>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
@@ -602,6 +519,25 @@ const styles = StyleSheet.create({
   logList: {
     gap: Spacing.sm,
   },
+  reminderGroup: {
+    gap: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  reminderGroupHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: Spacing.xs,
+    paddingTop: Spacing.sm,
+  },
+  reminderGroupName: {
+    ...Typography.sm,
+    fontWeight: Typography.semibold,
+  },
+  reminderGroupTime: {
+    ...Typography.sm,
+    color: undefined,
+  },
   logItem: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -619,13 +555,9 @@ const styles = StyleSheet.create({
   logInfo: {
     flex: 1,
   },
-  logReminder: {
+  logDrugName: {
     ...Typography.sm,
     fontWeight: Typography.medium,
-  },
-  logDrugs: {
-    ...Typography.xs,
-    marginTop: 2,
   },
   logTime: {
     ...Typography.xs,
