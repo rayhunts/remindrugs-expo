@@ -7,17 +7,22 @@ import {
   toggleReminderActive as dbToggleActive,
   updateReminder as dbUpdateReminder,
 } from "@/services/database";
+import { reminderEvents } from "@/services/event-bus";
 import type { Reminder, Weekday } from "@/types/reminder";
-import { isToday, toDateString, generateId } from "@/utils/date-helpers";
+import { toDateString, generateId } from "@/utils/date-helpers";
 
 export function useReminders() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadReminders = useCallback(() => {
     try {
+      setError(null);
       const all = getAllReminders();
       setReminders(all);
+    } catch (e) {
+      setError("Failed to load reminders.");
     } finally {
       setLoading(false);
     }
@@ -25,6 +30,7 @@ export function useReminders() {
 
   useEffect(() => {
     loadReminders();
+    return reminderEvents.on(loadReminders);
   }, [loadReminders]);
 
   const todayReminders = reminders.filter((r) => {
@@ -50,34 +56,34 @@ export function useReminders() {
         createdAt: Date.now(),
       };
       insertReminder(reminder);
-      loadReminders();
+      reminderEvents.emit();
       return reminder;
     },
-    [loadReminders],
+    [],
   );
 
   const update = useCallback(
     async (reminder: Reminder) => {
       dbUpdateReminder(reminder);
-      loadReminders();
+      reminderEvents.emit();
     },
-    [loadReminders],
+    [],
   );
 
   const remove = useCallback(
     async (id: string) => {
       dbDeleteReminder(id);
-      loadReminders();
+      reminderEvents.emit();
     },
-    [loadReminders],
+    [],
   );
 
   const toggleActive = useCallback(
     async (id: string, isActive: boolean) => {
       dbToggleActive(id, isActive);
-      loadReminders();
+      reminderEvents.emit();
     },
-    [loadReminders],
+    [],
   );
 
   const getById = useCallback((id: string) => {
@@ -88,6 +94,7 @@ export function useReminders() {
     reminders,
     todayReminders,
     loading,
+    error,
     addReminder,
     updateReminder: update,
     deleteReminder: remove,

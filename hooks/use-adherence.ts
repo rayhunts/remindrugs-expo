@@ -3,13 +3,15 @@ import type { AdherenceLog, DoseStatus } from "@/types/adherence";
 import type { Reminder } from "@/types/reminder";
 import {
   deleteLog as dbDeleteLog,
+  deleteLogByReminderAndDate as dbDeleteLogByReminderAndDate,
   getLogsForDate,
   getLogsForRange,
   getLogsForReminder,
   logDose as dbLogDose,
   updateLogStatus as dbUpdateLogStatus,
 } from "@/services/database";
-import { getAdherenceColor, calculateStreak, getMonthAdherencePercent, generateId } from "@/utils/date-helpers";
+import { adherenceEvents } from "@/services/event-bus";
+import { getAdherenceColor, calculateStreak, getMonthAdherencePercent, generateId, toDateString } from "@/utils/date-helpers";
 
 export interface MonthlyStats {
   adherencePercent: number;
@@ -22,17 +24,21 @@ export interface MonthlyStats {
 export function useAdherence() {
   const [logs, setLogs] = useState<AdherenceLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadLogs = useCallback(() => {
     try {
+      setError(null);
       const today = new Date();
       const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
       const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
       const rangeLogs = getLogsForRange(
-        startDate.toISOString().split("T")[0],
-        endDate.toISOString().split("T")[0],
+        toDateString(startDate),
+        toDateString(endDate),
       );
       setLogs(rangeLogs);
+    } catch {
+      setError("Failed to load adherence data.");
     } finally {
       setLoading(false);
     }
@@ -40,6 +46,7 @@ export function useAdherence() {
 
   useEffect(() => {
     loadLogs();
+    return adherenceEvents.on(loadLogs);
   }, [loadLogs]);
 
   const logDose = useCallback(
@@ -52,14 +59,14 @@ export function useAdherence() {
         takenAt: status === "taken" ? Date.now() : undefined,
       };
       dbLogDose(log);
-      loadLogs();
+      adherenceEvents.emit();
     },
     [loadLogs],
   );
 
   const markTaken = useCallback(
     async (reminderId: string, date?: string) => {
-      const d = date ?? new Date().toISOString().split("T")[0];
+      const d = date ?? toDateString(new Date());
       await logDose(reminderId, d, "taken");
     },
     [logDose],
@@ -144,7 +151,7 @@ export function useAdherence() {
   const updateLogStatus = useCallback(
     async (id: string, status: DoseStatus) => {
       dbUpdateLogStatus(id, status);
-      loadLogs();
+      adherenceEvents.emit();
     },
     [loadLogs],
   );
@@ -152,14 +159,23 @@ export function useAdherence() {
   const deleteLog = useCallback(
     async (id: string) => {
       dbDeleteLog(id);
-      loadLogs();
+      adherenceEvents.emit();
     },
     [loadLogs],
+  );
+
+  const undoLog = useCallback(
+    (reminderId: string, date: string) => {
+      dbDeleteLogByReminderAndDate(reminderId, date);
+      adherenceEvents.emit();
+    },
+    [],
   );
 
   return {
     logs,
     loading,
+    error,
     logDose,
     markTaken,
     markMissed,
@@ -170,6 +186,7 @@ export function useAdherence() {
     getLogsForDate: getLogsForDateFn,
     updateLogStatus,
     deleteLog,
+    undoLog,
     refreshLogs: loadLogs,
   };
 }
