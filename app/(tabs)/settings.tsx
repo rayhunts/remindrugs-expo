@@ -3,6 +3,7 @@ import {
   View,
   Text,
   Pressable,
+  ScrollView,
   StyleSheet,
   Alert,
   Linking,
@@ -110,7 +111,7 @@ export default function SettingsScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={["top"]}
     >
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.textPrimary }]}>
@@ -379,7 +380,7 @@ export default function SettingsScreen() {
             {t.settings.privacyNote}
           </Text>
         </View>
-      </View>
+      </ScrollView>
 
       <ToastSnackbar
         visible={toast.visible}
@@ -394,7 +395,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: {
-    flex: 1,
     padding: Spacing.md,
   },
   header: {
