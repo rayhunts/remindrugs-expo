@@ -52,7 +52,13 @@
       "expo-font",
       "expo-image",
       "expo-web-browser",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-notifications",
+        {
+          "sounds": ["./assets/sounds/pill_bottle_shake.mp3"]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
