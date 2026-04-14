@@ -221,15 +221,16 @@ export default function CalendarScreen() {
       "stylesheet.day.basic": {
         base: {
           width: 32,
-          height: 32,
+          height: 44,
           alignItems: "center" as unknown as string,
-          justifyContent: "center" as unknown as string,
+          justifyContent: "flex-start" as unknown as string,
+          paddingTop: 4,
         },
         text: {
           ...Typography.sm,
           color: colors.textPrimary,
           textAlign: "center" as unknown as string,
-          lineHeight: 32,
+          lineHeight: 28,
         },
         today: {
           backgroundColor: colors.primaryLight,
@@ -240,7 +241,7 @@ export default function CalendarScreen() {
           fontWeight: Typography.bold as unknown as number,
           color: colors.primary,
           textAlign: "center" as unknown as string,
-          lineHeight: 32,
+          lineHeight: 28,
         },
         selected: {
           backgroundColor: colors.primary,
@@ -251,11 +252,15 @@ export default function CalendarScreen() {
           fontWeight: Typography.bold as unknown as number,
           color: colors.textInverse,
           textAlign: "center" as unknown as string,
-          lineHeight: 32,
+          lineHeight: 28,
         },
       },
       "stylesheet.day.multiDot": {
         dotsContainer: {
+          position: "absolute" as unknown as string,
+          bottom: 4,
+          left: 0,
+          right: 0,
           flexDirection: "row" as unknown as string,
           alignItems: "center" as unknown as string,
           justifyContent: "center" as unknown as string,
