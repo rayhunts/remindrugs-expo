@@ -119,11 +119,11 @@ export default function CalendarScreen() {
     });
   }, [selectedDate, reminders]);
 
-  // Key by drugId instead of reminderId
+  // Key by reminderId:drugId for per-reminder-drug independent tracking
   const selectedLogMap = useMemo(() => {
     const map = new Map<string, AdherenceLog>();
     for (const log of selectedLogs) {
-      map.set(log.drugId, log);
+      map.set(`${log.reminderId}:${log.drugId}`, log);
     }
     return map;
   }, [selectedLogs]);
@@ -133,6 +133,15 @@ export default function CalendarScreen() {
     if (isToday(selectedDate)) return true;
     return isWithinLast7Days(selectedDate);
   }, [selectedDate]);
+
+  const hasUnloggedDrugs = useMemo(() => {
+    for (const r of selectedDateReminders) {
+      for (const drug of r.drugs) {
+        if (!selectedLogMap.has(`${r.id}:${drug.id}`)) return true;
+      }
+    }
+    return false;
+  }, [selectedDateReminders, selectedLogMap]);
 
   const isFuture = useMemo(() => {
     if (!selectedDate) return false;
@@ -262,7 +271,7 @@ export default function CalendarScreen() {
 
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { backgroundColor: colors.primaryLight, borderColor: colors.primary }]}>
-            <Text style={[styles.statValue, { color: colors.primary }]}>{stats.adherencePercent}%</Text>
+            <Text style={[styles.statValueLg, { color: colors.primary }]}>{stats.adherencePercent}%</Text>
             <Text style={[styles.statLabel, { color: colors.primary }]}>Adherence</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -335,7 +344,7 @@ export default function CalendarScreen() {
                         </Text>
                       </View>
                       {reminder.drugs.map((drug) => {
-                        const log = selectedLogMap.get(drug.id);
+                        const log = selectedLogMap.get(`${reminder.id}:${drug.id}`);
                         return (
                           <View
                             key={drug.id}
@@ -384,14 +393,14 @@ export default function CalendarScreen() {
                   );
                 })}
 
-                {isPastAndEditable && (
+                {isPastAndEditable && hasUnloggedDrugs && (
                   <View style={styles.actionRow}>
                     <Pressable
                       onPress={() => {
                         let count = 0;
                         for (const r of selectedDateReminders) {
                           for (const drug of r.drugs) {
-                            if (!selectedLogMap.has(drug.id)) {
+                            if (!selectedLogMap.has(`${r.id}:${drug.id}`)) {
                               handleMarkDrug(r.id, drug.id, "taken");
                               count++;
                             }
@@ -401,7 +410,7 @@ export default function CalendarScreen() {
                           Alert.alert("All logged", "All medications for this day already have a status.");
                         }
                       }}
-                      style={[styles.actionBtn, { backgroundColor: colors.success }]}
+                      style={({ pressed }) => [styles.actionBtn, { backgroundColor: colors.success, opacity: pressed ? 0.7 : 1 }]}
                     >
                       <MaterialCommunityIcons name="check" size={16} color={colors.textInverse} />
                       <Text style={[styles.actionBtnText, { color: colors.textInverse }]}>All Taken</Text>
@@ -411,7 +420,7 @@ export default function CalendarScreen() {
                         let count = 0;
                         for (const r of selectedDateReminders) {
                           for (const drug of r.drugs) {
-                            if (!selectedLogMap.has(drug.id)) {
+                            if (!selectedLogMap.has(`${r.id}:${drug.id}`)) {
                               handleMarkDrug(r.id, drug.id, "missed");
                               count++;
                             }
@@ -421,7 +430,7 @@ export default function CalendarScreen() {
                           Alert.alert("All logged", "All medications for this day already have a status.");
                         }
                       }}
-                      style={[styles.actionBtn, { backgroundColor: colors.danger }]}
+                      style={({ pressed }) => [styles.actionBtn, { backgroundColor: colors.danger, opacity: pressed ? 0.7 : 1 }]}
                     >
                       <MaterialCommunityIcons name="close" size={16} color={colors.textInverse} />
                       <Text style={[styles.actionBtnText, { color: colors.textInverse }]}>All Missed</Text>
@@ -482,6 +491,10 @@ const styles = StyleSheet.create({
     ...Typography.lg,
     fontWeight: Typography.bold,
   },
+  statValueLg: {
+    ...Typography.xl,
+    fontWeight: Typography.bold,
+  },
   statLabel: {
     ...Typography.xs,
     marginTop: 2,
@@ -536,7 +549,6 @@ const styles = StyleSheet.create({
   },
   reminderGroupTime: {
     ...Typography.sm,
-    color: undefined,
   },
   logItem: {
     flexDirection: "row",

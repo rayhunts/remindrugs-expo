@@ -52,6 +52,7 @@ export default function HomeScreen() {
   const colors = getColors(scheme);
   const { todayReminders, loading } = useReminders();
   const {
+    logs,
     markTaken,
     markSkipped,
     getLogsForDate,
@@ -78,27 +79,28 @@ export default function HomeScreen() {
 
   const greeting = useMemo(() => getGreeting(), []);
   const todayStr = useMemo(() => formatDateLong(new Date()), []);
+  const todayDateStr = useMemo(() => toDateString(new Date()), []);
 
   const todayLogs = useMemo(
-    () => getLogsForDate(toDateString(new Date())),
-    [getLogsForDate],
+    () => logs.filter((l) => l.date === todayDateStr),
+    [logs, todayDateStr],
   );
 
-  // Per-drug tracking
+  // Per-reminder-drug tracking (composite keys so same drug in different reminders is independent)
   const takenDrugIds = useMemo(
-    () => new Set(todayLogs.filter((l) => l.status === "taken").map((l) => l.drugId)),
+    () => new Set(todayLogs.filter((l) => l.status === "taken").map((l) => `${l.reminderId}:${l.drugId}`)),
     [todayLogs],
   );
 
   const skippedDrugIds = useMemo(
-    () => new Set(todayLogs.filter((l) => l.status === "skipped").map((l) => l.drugId)),
+    () => new Set(todayLogs.filter((l) => l.status === "skipped").map((l) => `${l.reminderId}:${l.drugId}`)),
     [todayLogs],
   );
 
   // Progress counts total drug-doses, not reminders
   const totalDrugDoses = todayReminders.reduce((sum, r) => sum + r.drugs.length, 0);
   const takenDrugCount = todayReminders.reduce(
-    (sum, r) => sum + r.drugs.filter((d) => takenDrugIds.has(d.id)).length,
+    (sum, r) => sum + r.drugs.filter((d) => takenDrugIds.has(`${r.id}:${d.id}`)).length,
     0,
   );
   const percent =
@@ -130,7 +132,7 @@ export default function HomeScreen() {
       setToast({
         visible: true,
         message: `${drug?.name ?? "Dose"} marked as taken`,
-        drugId,
+        drugId: `${reminderId}:${drugId}`,
         date: toDateString(new Date()),
       });
     },
@@ -141,14 +143,15 @@ export default function HomeScreen() {
     (reminder: ReminderWithDrugs) => {
       const today = toDateString(new Date());
       for (const drug of reminder.drugs) {
-        if (!takenDrugIds.has(drug.id) && !skippedDrugIds.has(drug.id)) {
+        const key = `${reminder.id}:${drug.id}`;
+        if (!takenDrugIds.has(key) && !skippedDrugIds.has(key)) {
           markTaken(reminder.id, drug.id, today);
         }
       }
       setToast({
         visible: true,
         message: `${reminder.name} — all doses marked as taken`,
-        drugId: "__all__",
+        drugId: `__all__:${reminder.id}`,
         date: today,
       });
     },
@@ -182,7 +185,7 @@ export default function HomeScreen() {
     );
     // A reminder is "fully done" if all its drugs are taken or skipped
     const isFullyDone = (r: ReminderWithDrugs) =>
-      r.drugs.every((d) => takenDrugIds.has(d.id) || skippedDrugIds.has(d.id));
+      r.drugs.every((d) => takenDrugIds.has(`${r.id}:${d.id}`) || skippedDrugIds.has(`${r.id}:${d.id}`));
 
     const pending = sorted.filter((r) => !isFullyDone(r));
     const completed = sorted.filter(isFullyDone);
@@ -212,7 +215,7 @@ export default function HomeScreen() {
   const handleLongPress = useCallback(
     (reminder: ReminderWithDrugs) => {
       const isFullyDone = reminder.drugs.every(
-        (d) => takenDrugIds.has(d.id) || skippedDrugIds.has(d.id),
+        (d) => takenDrugIds.has(`${reminder.id}:${d.id}`) || skippedDrugIds.has(`${reminder.id}:${d.id}`),
       );
       const options: ActionSheetOption[] = [];
 
@@ -228,7 +231,8 @@ export default function HomeScreen() {
           onPress: () => {
             const today = toDateString(new Date());
             for (const drug of reminder.drugs) {
-              if (!takenDrugIds.has(drug.id) && !skippedDrugIds.has(drug.id)) {
+              const key = `${reminder.id}:${drug.id}`;
+              if (!takenDrugIds.has(key) && !skippedDrugIds.has(key)) {
                 handleMarkSkipped(reminder.id, drug.id);
               }
             }
@@ -339,7 +343,7 @@ export default function HomeScreen() {
                     {takenDrugCount} of {totalDrugDoses} doses taken
                   </Text>
                   {monthStats.streak > 0 && (
-                    <View style={styles.streakBadge}>
+                    <View style={[styles.streakBadge, { backgroundColor: colors.warningLight }]}>
                       <MaterialCommunityIcons name="fire" size={14} color={colors.warning} />
                       <Text style={[styles.streakText, { color: colors.warning }]}>
                         {monthStats.streak}d
@@ -399,7 +403,7 @@ export default function HomeScreen() {
           options={(() => {
             const r = actionSheetReminder.reminder;
             const isFullyDone = r.drugs.every(
-              (d) => takenDrugIds.has(d.id) || skippedDrugIds.has(d.id),
+              (d) => takenDrugIds.has(`${r.id}:${d.id}`) || skippedDrugIds.has(`${r.id}:${d.id}`),
             );
             const opts: ActionSheetOption[] = [];
             if (!isFullyDone) {
@@ -415,7 +419,8 @@ export default function HomeScreen() {
                   onPress: () => {
                     const today = toDateString(new Date());
                     for (const drug of r.drugs) {
-                      if (!takenDrugIds.has(drug.id) && !skippedDrugIds.has(drug.id)) {
+                      const key = `${r.id}:${drug.id}`;
+                      if (!takenDrugIds.has(key) && !skippedDrugIds.has(key)) {
                         handleMarkSkipped(r.id, drug.id);
                       }
                     }
@@ -512,7 +517,6 @@ const styles = StyleSheet.create({
     gap: 2,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
-    backgroundColor: "#FEF3C7",
     borderRadius: Radius.full,
   },
   streakText: {

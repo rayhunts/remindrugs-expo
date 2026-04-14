@@ -32,12 +32,12 @@ export function ReminderCard({
   const scheme = useColorScheme();
   const colors = getColors(scheme);
 
-  const frequency = getFrequencyLabel(reminder.days) as "daily" | "weekly" | "custom";
+  const frequency = getFrequencyLabel(reminder.days);
   const dayAbbr = getDayAbbreviations(reminder.days);
 
   const totalDrugs = drugs.length;
-  const takenCount = drugs.filter((d) => takenDrugIds.has(d.id)).length;
-  const skippedCount = drugs.filter((d) => skippedDrugIds.has(d.id)).length;
+  const takenCount = drugs.filter((d) => takenDrugIds.has(`${reminder.id}:${d.id}`)).length;
+  const skippedCount = drugs.filter((d) => skippedDrugIds.has(`${reminder.id}:${d.id}`)).length;
   const allDone = takenCount === totalDrugs;
   const someDone = takenCount > 0 || skippedCount > 0;
   const noneDone = takenCount === 0 && skippedCount === 0;
@@ -47,7 +47,7 @@ export function ReminderCard({
   return (
     <Pressable
       onLongPress={onLongPress}
-      style={[
+      style={({ pressed }) => [
         styles.card,
         {
           backgroundColor: allDone
@@ -56,7 +56,7 @@ export function ReminderCard({
               ? colors.background
               : colors.card,
           borderColor: colors.border,
-          opacity: allDone ? 0.85 : 1,
+          opacity: (allDone ? 0.85 : 1) * (pressed ? 0.7 : 1),
         },
       ]}
     >
@@ -84,7 +84,7 @@ export function ReminderCard({
               name={drug.name}
               dosage={drug.dosage}
               color={drug.color}
-              checked={takenDrugIds.has(drug.id)}
+              checked={takenDrugIds.has(`${reminder.id}:${drug.id}`)}
               onToggle={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 onMarkDrug(drug.id);
