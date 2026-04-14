@@ -41,7 +41,13 @@ export function PermissionBanner({ onDismiss }: PermissionBannerProps) {
       <View style={styles.actions}>
         <Pressable
           onPress={() => Linking.openSettings()}
-          style={[styles.fixButton, { backgroundColor: colors.warning }]}
+          style={({ pressed }) => [
+            styles.fixButton,
+            {
+              backgroundColor: colors.warning,
+              opacity: pressed ? 0.7 : 1,
+            },
+          ]}
           accessibilityLabel="Fix notification permissions"
         >
           <Text style={[styles.fixText, { color: colors.textInverse }]}>

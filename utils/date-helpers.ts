@@ -7,10 +7,10 @@ export function generateId(): string {
   return Crypto.randomUUID();
 }
 
-export function getFrequencyLabel(days: Weekday[]): "Daily" | "Weekly" | "Custom" {
-  if (days.length === 7) return "Daily";
-  if (days.length === 1) return "Weekly";
-  return "Custom";
+export function getFrequencyLabel(days: Weekday[]): "daily" | "weekly" | "custom" {
+  if (days.length === 7) return "daily";
+  if (days.length === 1) return "weekly";
+  return "custom";
 }
 
 export function formatTime(hour: number, minute: number): string {

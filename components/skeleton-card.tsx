@@ -1,12 +1,16 @@
 import { View, StyleSheet, Animated } from "react-native";
 import { useEffect, useRef } from "react";
 import { Spacing, Radius } from "@/constants/spacing";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { getColors } from "@/constants/colors";
 
 interface SkeletonCardProps {
   style?: object;
 }
 
 export function SkeletonCard({ style }: SkeletonCardProps) {
+  const scheme = useColorScheme();
+  const colors = getColors(scheme);
   const shimmer = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -34,29 +38,29 @@ export function SkeletonCard({ style }: SkeletonCardProps) {
   });
 
   return (
-    <View style={[styles.card, style]}>
-      <View style={[styles.stripe, { backgroundColor: "#E5E7EB" }]} />
+    <View style={[styles.card, style, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={[styles.stripe, { backgroundColor: colors.border }]} />
       <View style={styles.content}>
         {/* Title skeleton */}
         <Animated.View
-          style={[styles.skeletonLine, styles.titleLine, { opacity }]}
+          style={[styles.skeletonLine, styles.titleLine, { opacity, backgroundColor: colors.divider }]}
         />
         {/* Drug chips skeleton */}
         <View style={styles.chipRow}>
           <Animated.View
-            style={[styles.skeletonChip, { opacity }]}
+            style={[styles.skeletonChip, { opacity, backgroundColor: colors.divider }]}
           />
           <Animated.View
-            style={[styles.skeletonChip, { opacity }]}
+            style={[styles.skeletonChip, { opacity, backgroundColor: colors.divider }]}
           />
         </View>
         {/* Meta row skeleton */}
         <Animated.View
-          style={[styles.skeletonLine, styles.metaLine, { opacity }]}
+          style={[styles.skeletonLine, styles.metaLine, { opacity, backgroundColor: colors.divider }]}
         />
         {/* Button skeleton */}
         <Animated.View
-          style={[styles.skeletonButton, { opacity }]}
+          style={[styles.skeletonButton, { opacity, backgroundColor: colors.divider }]}
         />
       </View>
     </View>
@@ -68,10 +72,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderWidth: 1,
     borderRadius: Radius.lg,
-    borderColor: "#E5E7EB",
     overflow: "hidden",
     marginBottom: Spacing.md,
-    backgroundColor: "#FFFFFF",
   },
   stripe: {
     width: 4,
@@ -82,7 +84,6 @@ const styles = StyleSheet.create({
   },
   skeletonLine: {
     height: 16,
-    backgroundColor: "#E5E7EB",
     borderRadius: 4,
   },
   titleLine: {
@@ -98,7 +99,6 @@ const styles = StyleSheet.create({
   skeletonChip: {
     width: 100,
     height: 24,
-    backgroundColor: "#E5E7EB",
     borderRadius: Radius.full,
   },
   metaLine: {
@@ -108,7 +108,6 @@ const styles = StyleSheet.create({
   skeletonButton: {
     width: "100%",
     height: 36,
-    backgroundColor: "#E5E7EB",
     borderRadius: Radius.md,
   },
 });

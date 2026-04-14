@@ -106,7 +106,7 @@ export default function SettingsScreen() {
           </Text>
           <Pressable
             onPress={() => Linking.openSettings()}
-            style={styles.row}
+            style={({ pressed }) => [styles.row, { opacity: pressed ? 0.7 : 1 }]}
             accessibilityLabel="Open notification settings"
           >
             <View style={styles.rowLeft}>
@@ -210,7 +210,7 @@ export default function SettingsScreen() {
           <Pressable
             onPress={handleExportData}
             disabled={exporting}
-            style={styles.row}
+            style={({ pressed }) => [styles.row, { opacity: pressed ? 0.7 : 1 }]}
             accessibilityLabel="Export data"
           >
             <View style={styles.rowLeft}>
@@ -243,7 +243,7 @@ export default function SettingsScreen() {
 
           <Pressable
             onPress={handleClearData}
-            style={styles.row}
+            style={({ pressed }) => [styles.row, { opacity: pressed ? 0.7 : 1 }]}
             accessibilityLabel="Clear all data"
           >
             <View style={styles.rowLeft}>

@@ -38,7 +38,14 @@ export function MedicationCard({ drug, reminders, onPress }: MedicationCardProps
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+      style={({ pressed }) => [
+        styles.card,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          opacity: pressed ? 0.7 : 1,
+        },
+      ]}
     >
       <View style={[styles.stripe, { backgroundColor: drug.color ?? colors.primary }]} />
 

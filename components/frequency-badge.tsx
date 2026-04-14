@@ -9,12 +9,6 @@ interface FrequencyBadgeProps {
   type: FrequencyType;
 }
 
-const BADGE_COLORS: Record<FrequencyType, string> = {
-  daily: "#22C55E",
-  weekly: "#3B82F6",
-  custom: "#F59E0B",
-};
-
 const BADGE_LABELS: Record<FrequencyType, string> = {
   daily: "Daily",
   weekly: "Weekly",
@@ -24,15 +18,24 @@ const BADGE_LABELS: Record<FrequencyType, string> = {
 export function FrequencyBadge({ type }: FrequencyBadgeProps) {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
-  const color = BADGE_COLORS[type];
+
+  const colorMap = {
+    daily: { color: colors.success, bg: colors.successLight },
+    weekly: { color: colors.info, bg: colors.infoLight },
+    custom: { color: colors.warning, bg: colors.warningLight },
+  };
+
+  const { color, bg } = colorMap[type];
 
   return (
     <View
       style={[
         styles.badge,
         {
-          backgroundColor: `${color}18`,
-          borderColor: `${color}40`,
+          backgroundColor: bg,
+          borderColor: color,
+          borderWidth: 1,
+          opacity: 0.8,
         },
       ]}
     >
@@ -48,7 +51,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
     borderRadius: 100,
-    borderWidth: 1,
   },
   text: {
     ...Typography.xs,
