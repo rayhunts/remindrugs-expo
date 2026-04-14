@@ -4,8 +4,6 @@ import type { Drug, Reminder, Weekday } from "@/types/reminder";
 import { toExpoWeekday, buildNotificationBody } from "@/utils/notification-helpers";
 import { SchedulableTriggerInputTypes } from "expo-notifications";
 
-// ── Handler (call at module level in _layout.tsx) ───────────────────────────
-
 export function setNotificationHandler(): void {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -17,45 +15,29 @@ export function setNotificationHandler(): void {
   });
 }
 
-// ── Channel setup (Android) ─────────────────────────────────────────────────
-
 export async function setupNotificationChannel(): Promise<void> {
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("remindrugs-channel", {
       name: "Medication Reminders",
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
-      sound: "default" as unknown as string,
+      sound: true,
     });
   }
 
-  // iOS notification action categories (no-op on Android)
   await Notifications.setNotificationCategoryAsync("reminder-actions", [
-    {
-      identifier: "mark-done",
-      buttonTitle: "Done",
-      options: {} as any,
-    },
-    {
-      identifier: "snooze",
-      buttonTitle: "Snooze 15m",
-      options: {} as any,
-    },
+    { identifier: "mark-done", buttonTitle: "Done", options: {} as any },
+    { identifier: "snooze", buttonTitle: "Snooze 15m", options: {} as any },
   ]);
 }
 
-// ── Permissions ─────────────────────────────────────────────────────────────
-
 export async function requestNotificationPermissions(): Promise<boolean> {
-  const { status: existingStatus } =
-    await Notifications.getPermissionsAsync();
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
-
   if (existingStatus !== "granted") {
     const { status } = await Notifications.requestPermissionsAsync();
     finalStatus = status;
   }
-
   return finalStatus === "granted";
 }
 
@@ -64,16 +46,11 @@ export async function hasNotificationPermission(): Promise<boolean> {
   return status === "granted";
 }
 
-// ── Scheduling ──────────────────────────────────────────────────────────────
-
-async function scheduleForDay(
-  reminder: Reminder,
-  day: Weekday,
-): Promise<string> {
+async function scheduleForDay(reminder: Reminder, drugs: Drug[], day: Weekday): Promise<string> {
   const id = await Notifications.scheduleNotificationAsync({
     content: {
       title: reminder.name,
-      body: buildNotificationBody(reminder),
+      body: buildNotificationBody(drugs),
       sound: true,
       data: { reminderId: reminder.id },
       categoryIdentifier: "reminder-actions",
@@ -89,44 +66,31 @@ async function scheduleForDay(
   return id;
 }
 
-export async function scheduleReminder(
-  reminder: Reminder,
-): Promise<string[]> {
+export async function scheduleReminder(reminder: Reminder, drugs: Drug[]): Promise<string[]> {
   const ids: string[] = [];
   for (const day of reminder.days) {
-    const id = await scheduleForDay(reminder, day);
+    const id = await scheduleForDay(reminder, drugs, day);
     ids.push(id);
   }
   return ids;
 }
 
-export async function cancelReminder(
-  notificationIds: string[],
-): Promise<void> {
+export async function cancelReminder(notificationIds: string[]): Promise<void> {
   for (const id of notificationIds) {
     await Notifications.cancelScheduledNotificationAsync(id);
   }
 }
 
-export async function rescheduleReminder(
-  reminder: Reminder,
-): Promise<string[]> {
+export async function rescheduleReminder(reminder: Reminder, drugs: Drug[]): Promise<string[]> {
   await cancelReminder(reminder.notificationIds);
-  return scheduleReminder(reminder);
+  return scheduleReminder(reminder, drugs);
 }
 
-// ── Snooze (one-time notification 15 minutes from now) ─────────────────────
-
-export async function scheduleSnooze(
-  reminder: Reminder,
-): Promise<string> {
-  const now = new Date();
-  now.setMinutes(now.getMinutes() + 15);
-
+export async function scheduleSnooze(reminder: Reminder, drugs: Drug[]): Promise<string> {
   const id = await Notifications.scheduleNotificationAsync({
     content: {
       title: `Snoozed: ${reminder.name}`,
-      body: buildNotificationBody(reminder),
+      body: buildNotificationBody(drugs),
       sound: true,
       data: { reminderId: reminder.id, type: "snooze" },
       categoryIdentifier: "reminder-actions",
@@ -140,17 +104,8 @@ export async function scheduleSnooze(
   return id;
 }
 
-// ── Refill reminder ─────────────────────────────────────────────────────────
-
-export async function scheduleRefillReminder(
-  drug: Drug,
-  reminderId: string,
-): Promise<void> {
-  if (
-    drug.currentStock === undefined ||
-    drug.stockThreshold === undefined
-  )
-    return;
+export async function scheduleRefillReminder(drug: Drug, reminderId: string): Promise<void> {
+  if (drug.currentStock === undefined || drug.stockThreshold === undefined) return;
   if (drug.currentStock > drug.stockThreshold) return;
 
   await Notifications.scheduleNotificationAsync({
