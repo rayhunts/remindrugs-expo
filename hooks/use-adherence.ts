@@ -3,7 +3,7 @@ import type { AdherenceLog, DoseStatus } from "@/types/adherence";
 import type { Reminder } from "@/types/reminder";
 import {
   deleteLog as dbDeleteLog,
-  deleteLogByReminderAndDate as dbDeleteLogByReminderAndDate,
+  deleteLogByDrugAndDate as dbDeleteLogByDrugAndDate,
   getLogsForDate,
   getLogsForRange,
   getLogsForReminder,
@@ -11,7 +11,7 @@ import {
   updateLogStatus as dbUpdateLogStatus,
 } from "@/services/database";
 import { adherenceEvents } from "@/services/event-bus";
-import { getAdherenceColor, calculateStreak, getMonthAdherencePercent, generateId, toDateString } from "@/utils/date-helpers";
+import { calculateStreak, generateId, toDateString } from "@/utils/date-helpers";
 
 export interface MonthlyStats {
   adherencePercent: number;
@@ -50,10 +50,11 @@ export function useAdherence() {
   }, [loadLogs]);
 
   const logDose = useCallback(
-    async (reminderId: string, date: string, status: DoseStatus) => {
+    async (reminderId: string, drugId: string, date: string, status: DoseStatus) => {
       const log: AdherenceLog = {
         id: generateId(),
         reminderId,
+        drugId,
         date,
         status,
         takenAt: status === "taken" ? Date.now() : undefined,
@@ -61,27 +62,27 @@ export function useAdherence() {
       dbLogDose(log);
       adherenceEvents.emit();
     },
-    [loadLogs],
+    [],
   );
 
   const markTaken = useCallback(
-    async (reminderId: string, date?: string) => {
+    async (reminderId: string, drugId: string, date?: string) => {
       const d = date ?? toDateString(new Date());
-      await logDose(reminderId, d, "taken");
+      await logDose(reminderId, drugId, d, "taken");
     },
     [logDose],
   );
 
   const markMissed = useCallback(
-    async (reminderId: string, date: string) => {
-      await logDose(reminderId, date, "missed");
+    async (reminderId: string, drugId: string, date: string) => {
+      await logDose(reminderId, drugId, date, "missed");
     },
     [logDose],
   );
 
   const markSkipped = useCallback(
-    async (reminderId: string, date: string) => {
-      await logDose(reminderId, date, "skipped");
+    async (reminderId: string, drugId: string, date: string) => {
+      await logDose(reminderId, drugId, date, "skipped");
     },
     [logDose],
   );
@@ -126,12 +127,21 @@ export function useAdherence() {
         dateMap.set(log.date, existing);
       }
 
-      const totalPerDay = reminders.length;
+      // Note: reminders here have drugs loaded (ReminderWithDrugs from useReminders)
+      const totalDrugsPerDay = reminders.reduce(
+        (sum, r) => sum + ('drugs' in r ? (r as any).drugs.length : 1),
+        0,
+      );
+      const total = totalDrugsPerDay || 1;
+
       const marked: Record<string, { dots: Array<{ color: string }> }> = {};
 
       for (const [date, counts] of dateMap) {
-        const total = totalPerDay || 1;
-        const color = getAdherenceColor(counts.taken, total);
+        const color = counts.taken === 0
+          ? "#EF4444"
+          : counts.taken >= total
+            ? "#22C55E"
+            : "#F59E0B";
         marked[date] = { dots: [{ color }] };
       }
 
@@ -140,7 +150,7 @@ export function useAdherence() {
     [],
   );
 
-  const getLogsForReminder = useCallback((reminderId: string) => {
+  const getLogsForReminderFn = useCallback((reminderId: string) => {
     return getLogsForReminder(reminderId);
   }, []);
 
@@ -153,7 +163,7 @@ export function useAdherence() {
       dbUpdateLogStatus(id, status);
       adherenceEvents.emit();
     },
-    [loadLogs],
+    [],
   );
 
   const deleteLog = useCallback(
@@ -161,12 +171,12 @@ export function useAdherence() {
       dbDeleteLog(id);
       adherenceEvents.emit();
     },
-    [loadLogs],
+    [],
   );
 
   const undoLog = useCallback(
-    (reminderId: string, date: string) => {
-      dbDeleteLogByReminderAndDate(reminderId, date);
+    (drugId: string, date: string) => {
+      dbDeleteLogByDrugAndDate(drugId, date);
       adherenceEvents.emit();
     },
     [],
@@ -182,7 +192,7 @@ export function useAdherence() {
     markSkipped,
     getMonthlyStats,
     getMarkedDates,
-    getLogsForReminder,
+    getLogsForReminder: getLogsForReminderFn,
     getLogsForDate: getLogsForDateFn,
     updateLogStatus,
     deleteLog,
