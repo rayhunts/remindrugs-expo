@@ -47,6 +47,8 @@ const en = {
     editReminder: "Edit Reminder",
     markedAsTaken: "{name} marked as taken",
     allDosesMarkedTaken: "{name} — all doses marked as taken",
+    swipeToTake: "Swipe right to take all",
+    swipeToSkip: "Swipe left to skip",
   },
   medications: {
     title: "Medications",
@@ -148,6 +150,7 @@ const en = {
     stockTracking: "STOCK TRACKING",
     stockPlaceholder: "Pills remaining",
     alertPlaceholder: "Alert at",
+    stockHint: "Track your pill count. Get alerted when stock runs low.",
     notFoundMessage: "This medication doesn't exist.",
   },
   components: {

@@ -49,6 +49,8 @@ const id = {
     editReminder: "Edit Pengingat",
     markedAsTaken: "{name} ditandai diminum",
     allDosesMarkedTaken: "{name} — semua dosis ditandai diminum",
+    swipeToTake: "Geser ke kanan untuk menandai semua",
+    swipeToSkip: "Geser ke kiri untuk lewati",
   },
   medications: {
     title: "Obat",
@@ -150,6 +152,7 @@ const id = {
     stockTracking: "PELACAKAN STOK",
     stockPlaceholder: "Obat tersisa",
     alertPlaceholder: "Peringatan pada",
+    stockHint: "Lacak jumlah obat Anda. Dapatkan peringatan saat stok menipis.",
     notFoundMessage: "Obat ini tidak ada.",
   },
   components: {
