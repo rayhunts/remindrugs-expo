@@ -5,6 +5,7 @@ import { getColors } from "@/constants/colors";
 import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useLanguage } from "@/contexts/language-context";
 
 interface TimePickerFieldProps {
   hour: number;
@@ -19,6 +20,7 @@ export function TimePickerField({
 }: TimePickerFieldProps) {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
+  const { t } = useLanguage();
   const [show, setShow] = useState(false);
   const [tempDate, setTempDate] = useState(
     new Date(2000, 0, 1, hour, minute),
@@ -57,7 +59,7 @@ export function TimePickerField({
         accessibilityLabel={`Select time, currently ${label}`}
       >
         <Text style={[styles.label, { color: colors.textSecondary }]}>
-          Time
+          {t.components.time}
         </Text>
         <Text style={[styles.time, { color: colors.textPrimary }]}>
           {label}

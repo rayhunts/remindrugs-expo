@@ -119,7 +119,7 @@ export default function MedicationsScreen() {
           router.push("/add-drug");
         }}
         style={[styles.fab, Shadow.fab, { backgroundColor: colors.primary }]}
-        accessibilityLabel="Add new medication"
+        accessibilityLabel={t.medications.addNewMedicationA11y}
       >
         <MaterialCommunityIcons name="plus" size={28} color="#FFFFFF" />
       </Pressable>

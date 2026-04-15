@@ -163,7 +163,7 @@ export function ReminderCard({
               onMarkAll();
             }}
             style={[styles.takenButton, { backgroundColor: colors.success }]}
-            accessibilityLabel={`Mark all in ${reminder.name} as taken`}
+            accessibilityLabel={t.components.markAllTakenA11y.replace("{name}", reminder.name)}
           >
             <Text style={[styles.takenText, { color: colors.textInverse }]}>
               {t.components.markAllTaken}

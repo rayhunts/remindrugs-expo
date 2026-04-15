@@ -4,6 +4,7 @@ import { getColors } from "@/constants/colors";
 import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useLanguage } from "@/contexts/language-context";
 
 interface DrugChipProps {
   name: string;
@@ -72,11 +73,12 @@ interface MoreChipProps {
 export function MoreChip({ count }: MoreChipProps) {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
+  const { t } = useLanguage();
 
   return (
     <View style={[styles.chip, { backgroundColor: colors.divider }]}>
       <Text style={[styles.text, { color: colors.textSecondary }]}>
-        +{count} more
+        {t.components.moreCount.replace("{count}", String(count))}
       </Text>
     </View>
   );

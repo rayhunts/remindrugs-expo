@@ -8,8 +8,6 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useLanguage } from "@/contexts/language-context";
 import type { Weekday } from "@/types/reminder";
 
-const DAYS = ["S", "M", "T", "W", "T", "F", "S"] as const;
-
 interface DaySelectorProps {
   selectedDays: Weekday[];
   onChange: (days: Weekday[]) => void;
@@ -21,6 +19,7 @@ export function DaySelector({ selectedDays, onChange }: DaySelectorProps) {
   const { t } = useLanguage();
 
   const dayNames = [t.days.sunday, t.days.monday, t.days.tuesday, t.days.wednesday, t.days.thursday, t.days.friday, t.days.saturday];
+  const dayAbbr = t.days.abbr;
 
   const isSelected = useCallback(
     (day: number) => selectedDays.includes(day as Weekday),
@@ -66,7 +65,7 @@ export function DaySelector({ selectedDays, onChange }: DaySelectorProps) {
       </View>
 
       <View style={styles.row}>
-        {DAYS.map((label, index) => {
+        {dayAbbr.map((label, index) => {
           const selected = isSelected(index);
           return (
             <Pressable

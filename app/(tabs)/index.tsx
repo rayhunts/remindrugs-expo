@@ -404,7 +404,7 @@ export default function HomeScreen() {
           router.push("/add-reminder");
         }}
         style={[styles.fab, Shadow.fab, { backgroundColor: colors.primary }]}
-        accessibilityLabel="Add new reminder"
+        accessibilityLabel={t.home.addNewReminderA11y}
       >
         <MaterialCommunityIcons name="plus" size={28} color="#FFFFFF" />
       </Pressable>

@@ -1,7 +1,7 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import type { Drug, Reminder, Weekday } from "@/types/reminder";
-import { toExpoWeekday, buildNotificationBody } from "@/utils/notification-helpers";
+import { toExpoWeekday, buildNotificationBody, getNotificationTexts } from "@/utils/notification-helpers";
 import { SchedulableTriggerInputTypes } from "expo-notifications";
 
 export function setNotificationHandler(): void {
@@ -16,9 +16,11 @@ export function setNotificationHandler(): void {
 }
 
 export async function setupNotificationChannel(): Promise<void> {
+  const n = getNotificationTexts();
+
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("remindrugs-channel", {
-      name: "Medication Reminders",
+      name: n.channelName,
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
       sound: "pill_bottle_shake.mp3",
@@ -26,8 +28,8 @@ export async function setupNotificationChannel(): Promise<void> {
   }
 
   await Notifications.setNotificationCategoryAsync("reminder-actions", [
-    { identifier: "mark-done", buttonTitle: "Done", options: {} as any },
-    { identifier: "snooze", buttonTitle: "Snooze 15m", options: {} as any },
+    { identifier: "mark-done", buttonTitle: n.done, options: {} as any },
+    { identifier: "snooze", buttonTitle: n.snooze15m, options: {} as any },
   ]);
 }
 
@@ -87,9 +89,10 @@ export async function rescheduleReminder(reminder: Reminder, drugs: Drug[]): Pro
 }
 
 export async function scheduleSnooze(reminder: Reminder, drugs: Drug[]): Promise<string> {
+  const n = getNotificationTexts();
   const id = await Notifications.scheduleNotificationAsync({
     content: {
-      title: `Snoozed: ${reminder.name}`,
+      title: n.snoozed.replace("{name}", reminder.name),
       body: buildNotificationBody(drugs),
       sound: "pill_bottle_shake.mp3",
       data: { reminderId: reminder.id, type: "snooze" },
@@ -108,10 +111,11 @@ export async function scheduleRefillReminder(drug: Drug, reminderId: string): Pr
   if (drug.currentStock === undefined || drug.stockThreshold === undefined) return;
   if (drug.currentStock > drug.stockThreshold) return;
 
+  const n = getNotificationTexts();
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: `Refill Needed: ${drug.name}`,
-      body: `You only have ${drug.currentStock} ${drug.form}(s) left. Time to refill!`,
+      title: n.refillNeeded.replace("{name}", drug.name),
+      body: n.refillBody.replace("{count}", String(drug.currentStock)).replace("{form}", drug.form),
       data: { reminderId, drugId: drug.id, type: "refill" },
     },
     trigger: null,
@@ -125,10 +129,11 @@ export async function checkAndScheduleRefillAlert(
   if (drug.currentStock === undefined || drug.stockThreshold === undefined) return;
   if (drug.currentStock > drug.stockThreshold) return;
 
+  const n = getNotificationTexts();
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: `Refill Needed: ${drug.name}`,
-      body: `Only ${drug.currentStock} ${drug.form}(s) remaining. Time to refill!`,
+      title: n.refillNeeded.replace("{name}", drug.name),
+      body: n.refillBodyShort.replace("{count}", String(drug.currentStock)).replace("{form}", drug.form),
       sound: "pill_bottle_shake.mp3",
       data: { reminderId, drugId: drug.id, type: "refill" },
       categoryIdentifier: "reminder-actions",
