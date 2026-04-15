@@ -1,5 +1,9 @@
+import React, { useCallback, useRef } from "react";
 import { Pressable, Text, View, StyleSheet } from "react-native";
 import * as Haptics from "expo-haptics";
+import Reanimated, { FadeIn, FadeOut } from "react-native-reanimated";
+import { RectButton } from "react-native-gesture-handler";
+import Swipeable, { type SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { getColors } from "@/constants/colors";
 import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
@@ -18,7 +22,17 @@ interface ReminderCardProps {
   skippedDrugIds: Set<string>;
   onMarkDrug: (drugId: string) => void;
   onMarkAll: () => void;
+  onMarkSkipped?: () => void;
   onLongPress?: () => void;
+}
+
+function SwipeAction({ color, label, onPress }: { color: string; label: string; onPress: () => void }) {
+  const colors = getColors(useColorScheme());
+  return (
+    <RectButton style={[styles.swipeAction, { backgroundColor: color }]} onPress={onPress}>
+      <Text style={[styles.swipeLabel, { color: colors.textInverse }]}>{label}</Text>
+    </RectButton>
+  );
 }
 
 export function ReminderCard({
@@ -28,6 +42,7 @@ export function ReminderCard({
   skippedDrugIds,
   onMarkDrug,
   onMarkAll,
+  onMarkSkipped,
   onLongPress,
 }: ReminderCardProps) {
   const scheme = useColorScheme();
@@ -46,7 +61,43 @@ export function ReminderCard({
 
   const stripeColor = allDone ? colors.success : someDone ? colors.warning : colors.primary;
 
-  return (
+  const swipeableRef = useRef<SwipeableMethods>(null);
+
+  const handleTakeAll = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onMarkAll();
+    swipeableRef.current?.close();
+  }, [onMarkAll]);
+
+  const handleSkipAll = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onMarkSkipped?.();
+    swipeableRef.current?.close();
+  }, [onMarkSkipped]);
+
+  const renderLeftActions = useCallback(
+    () => (
+      <SwipeAction
+        color={colors.success}
+        label={t.components.markAllTaken}
+        onPress={handleTakeAll}
+      />
+    ),
+    [colors.success, t.components.markAllTaken, handleTakeAll],
+  );
+
+  const renderRightActions = useCallback(
+    () => (
+      <SwipeAction
+        color={colors.textTertiary}
+        label={t.home.skipAll}
+        onPress={handleSkipAll}
+      />
+    ),
+    [colors.textTertiary, t.home.skipAll, handleSkipAll],
+  );
+
+  const card = (
     <Pressable
       onLongPress={onLongPress}
       style={({ pressed }) => [
@@ -144,15 +195,45 @@ export function ReminderCard({
       </View>
     </Pressable>
   );
+
+  if (allDone) {
+    return <Reanimated.View entering={FadeIn.duration(200)} style={styles.swipeContainer}>{card}</Reanimated.View>;
+  }
+
+  return (
+    <Reanimated.View entering={FadeIn.duration(200)} style={styles.swipeContainer}>
+      <Swipeable
+        ref={swipeableRef}
+        renderLeftActions={renderLeftActions}
+        renderRightActions={renderRightActions}
+        friction={2}
+        overshootLeft={false}
+        overshootRight={false}
+      >
+        {card}
+      </Swipeable>
+    </Reanimated.View>
+  );
 }
 
 const styles = StyleSheet.create({
+  swipeContainer: { marginBottom: Spacing.md },
+  swipeAction: {
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    marginVertical: Spacing.xs,
+    borderRadius: Radius.lg,
+  },
+  swipeLabel: {
+    ...Typography.sm,
+    fontWeight: Typography.semibold,
+  },
   card: {
     flexDirection: "row",
     borderWidth: 1,
     borderRadius: Radius.lg,
     overflow: "hidden",
-    marginBottom: Spacing.md,
   },
   stripe: { width: 4 },
   content: {

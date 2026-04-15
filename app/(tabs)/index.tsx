@@ -382,6 +382,15 @@ export default function HomeScreen() {
               skippedDrugIds={skippedDrugIds}
               onMarkDrug={(drugId) => handleMarkDrug(item.reminder.id, drugId)}
               onMarkAll={() => handleMarkAll(item.reminder)}
+              onMarkSkipped={() => {
+                const today = toDateString(new Date());
+                for (const drug of item.reminder.drugs) {
+                  const key = `${item.reminder.id}:${drug.id}`;
+                  if (!takenDrugIds.has(key) && !skippedDrugIds.has(key)) {
+                    handleMarkSkipped(item.reminder.id, drug.id);
+                  }
+                }
+              }}
               onLongPress={() => handleLongPress(item.reminder)}
             />
           );
