@@ -186,6 +186,22 @@ const id = {
     saturday: "Sabtu",
     abbr: ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"],
   },
+  scan: {
+    title: "Pindai Resep",
+    scanPrescription: "Pindai Resep",
+    takePhoto: "Ambil Foto",
+    pickImage: "Dari Galeri",
+    processing: "Membaca resep...",
+    recognizedText: "TEKS TERKENALI",
+    extractedMeds: "OBAT TEREKSTRAK",
+    addAll: "Tambah Semua Obat",
+    drugName: "Nama obat",
+    noMedsFound: "Tidak ada obat ditemukan",
+    noMedsFoundMessage: "Tidak dapat mendeteksi obat dari gambar ini. Coba foto yang lebih jelas atau masukkan obat secara manual.",
+    ocrError: "Pemindaian gagal",
+    emptyTitle: "Pindai resep",
+    emptyMessage: "Ambil foto atau pilih gambar resep atau label apotek untuk menambahkan obat secara otomatis.",
+  },
 } satisfies TranslationKeys;
 
 export default id;

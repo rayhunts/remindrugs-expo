@@ -184,6 +184,22 @@ const en = {
     saturday: "Saturday",
     abbr: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
   },
+  scan: {
+    title: "Scan Prescription",
+    scanPrescription: "Scan Prescription",
+    takePhoto: "Take Photo",
+    pickImage: "From Gallery",
+    processing: "Reading prescription...",
+    recognizedText: "RECOGNIZED TEXT",
+    extractedMeds: "EXTRACTED MEDICATIONS",
+    addAll: "Add All Medications",
+    drugName: "Drug name",
+    noMedsFound: "No medications found",
+    noMedsFoundMessage: "Could not detect any medications in this image. Try a clearer photo or enter medications manually.",
+    ocrError: "Scanning failed",
+    emptyTitle: "Scan a prescription",
+    emptyMessage: "Take a photo or pick an image of your prescription or pharmacy label to automatically add medications.",
+  },
 };
 
 type DeepStringify<T> = {
