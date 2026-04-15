@@ -8,8 +8,10 @@ import {
   getLogsForRange,
   updateLogStatus as dbUpdateLogStatus,
   deleteLog as dbDeleteLog,
+  deductDrugStock,
 } from "@/services/database";
 import { toDateString, generateId } from "@/utils/date-helpers";
+import { drugEvents } from "@/services/event-bus";
 
 interface AdherenceState {
   logs: AdherenceLog[];
@@ -53,6 +55,14 @@ export const useAdherenceStore = create<AdherenceState>((set, get) => ({
     // Optimistic: update store first, then persist
     set((state) => ({ logs: [...state.logs, log] }));
     dbLogDose(log);
+
+    // Deduct stock when marking as taken
+    if (status === "taken") {
+      const newStock = deductDrugStock(drugId);
+      if (newStock !== null) {
+        drugEvents.emit();
+      }
+    }
   },
 
   updateStatus: (id, status) => {
