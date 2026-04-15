@@ -71,25 +71,37 @@ export function MedicationCard({ drug, reminders, onPress }: MedicationCardProps
         </Text>
 
         {drug.currentStock !== undefined && (
-          <View style={styles.stockRow}>
-            <MaterialCommunityIcons
-              name="package-variant"
-              size={14}
-              color={hasLowStock ? colors.danger : colors.textTertiary}
-            />
-            <Text
-              style={[styles.stockText, { color: hasLowStock ? colors.danger : colors.textTertiary }]}
-            >
-              {drug.currentStock} {t.common.remaining}
-              {drug.stockThreshold !== undefined ? ` (${t.editDrug.alertPlaceholder.replace("{threshold}", String(drug.stockThreshold))})` : ""}
-            </Text>
-          </View>
-        )}
-
-        {hasLowStock && (
-          <View style={[styles.refillBadge, { backgroundColor: colors.dangerLight }]}>
-            <MaterialCommunityIcons name="alert-circle" size={12} color={colors.danger} />
-            <Text style={[styles.refillText, { color: colors.danger }]}> {t.medications.lowStock}</Text>
+          <View style={styles.stockSection}>
+            <View style={styles.stockRow}>
+              <MaterialCommunityIcons
+                name={hasLowStock ? "alert-circle" : "package-variant"}
+                size={14}
+                color={hasLowStock ? colors.danger : colors.textTertiary}
+              />
+              <Text
+                style={[styles.stockText, { color: hasLowStock ? colors.danger : colors.textTertiary }]}
+              >
+                {drug.currentStock} {t.common.remaining}
+              </Text>
+              {drug.stockThreshold !== undefined && (
+                <Text style={[styles.stockThreshold, { color: colors.textTertiary }]}>
+                  · {t.editDrug.alertPlaceholder} {drug.stockThreshold}
+                </Text>
+              )}
+            </View>
+            {drug.stockThreshold !== undefined && (
+              <View style={[styles.stockBarTrack, { backgroundColor: colors.border }]}>
+                <View
+                  style={[
+                    styles.stockBarFill,
+                    {
+                      width: `${Math.min(100, (drug.currentStock / (drug.stockThreshold * 2)) * 100)}%`,
+                      backgroundColor: hasLowStock ? colors.danger : colors.primary,
+                    },
+                  ]}
+                />
+              </View>
+            )}
           </View>
         )}
 
@@ -158,28 +170,18 @@ const styles = StyleSheet.create({
     ...Typography.sm,
     marginTop: 2,
   },
+  stockSection: { marginTop: 4, gap: 4 },
   stockRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.xs,
-    marginTop: 2,
   },
   stockText: {
     ...Typography.xs,
   },
-  refillBadge: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: 100,
-    marginTop: 2,
-  },
-  refillText: {
-    ...Typography.xs,
-    fontWeight: Typography.semibold,
-  },
+  stockThreshold: { ...Typography.xs },
+  stockBarTrack: { height: 4, borderRadius: 2, overflow: "hidden" },
+  stockBarFill: { height: "100%", borderRadius: 2 },
   notes: {
     ...Typography.xs,
     marginTop: 2,

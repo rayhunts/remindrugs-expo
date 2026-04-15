@@ -162,8 +162,13 @@ export function DrugFormComponent({
       </View>
 
       {/* Stock Tracking */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t.editDrug.stockTracking}</Text>
+      <View style={[styles.stockCard, { backgroundColor: colors.divider, borderColor: colors.border }]}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginBottom: Spacing.sm }}>
+          <MaterialCommunityIcons name="package-variant" size={16} color={colors.primary} />
+          <Text style={[styles.stockCardLabel, { color: colors.textPrimary }]}>
+            {t.editDrug.stockTracking}
+          </Text>
+        </View>
         <View style={styles.row}>
           <ThemedInput
             style={styles.flex1}
@@ -180,6 +185,9 @@ export function DrugFormComponent({
             keyboardType="numeric"
           />
         </View>
+        <Text style={[styles.stockHint, { color: colors.textTertiary }]}>
+          {t.editDrug.stockHint}
+        </Text>
       </View>
     </>
   );
@@ -249,4 +257,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 2,
   },
+  stockCard: { borderRadius: Radius.md, padding: Spacing.md, borderWidth: 1 },
+  stockCardLabel: { ...Typography.sm, fontWeight: Typography.semibold },
+  stockHint: { ...Typography.xs, marginTop: Spacing.xs, fontStyle: "italic" },
 });
