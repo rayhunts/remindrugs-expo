@@ -286,7 +286,7 @@ export default function EditReminderScreen() {
                     placeholder={t.reminders.qtyPlaceholder}
                     value={newDrugQty > 0 ? String(newDrugQty) : ""}
                     onChangeText={(text) => {
-                      const qty = parseInt(text, 10);
+                      const qty = parseFloat(text);
                       if (!isNaN(qty) && qty > 0) setNewDrugQty(qty);
                     }}
                     keyboardType="numeric"

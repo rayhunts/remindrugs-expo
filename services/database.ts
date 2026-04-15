@@ -27,11 +27,11 @@ db.execSync(`
     name TEXT NOT NULL,
     dosage TEXT NOT NULL DEFAULT '',
     form TEXT NOT NULL DEFAULT 'tablet',
-    quantity INTEGER NOT NULL DEFAULT 1,
+    quantity REAL NOT NULL DEFAULT 1,
     notes TEXT,
     color TEXT,
-    current_stock INTEGER,
-    stock_threshold INTEGER
+    current_stock REAL,
+    stock_threshold REAL
   );
 
   CREATE TABLE IF NOT EXISTS reminder_drugs (
@@ -134,6 +134,33 @@ function migrateV1ToV2(): void {
 }
 
 migrateV1ToV2();
+
+// ── Migration: v2 → v3 (INTEGER → REAL for quantity/stock) ─────────────────────
+
+function migrateV2ToV3(): void {
+  const tableInfo = db.getAllSync<{ name: string; type: string }>("PRAGMA table_info(drugs)");
+  const quantityCol = tableInfo.find((col) => col.name === "quantity");
+
+  if (!quantityCol || quantityCol.type === "REAL") return;
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS drugs_new (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
+      dosage TEXT NOT NULL DEFAULT '',
+      form TEXT NOT NULL DEFAULT 'tablet',
+      quantity REAL NOT NULL DEFAULT 1,
+      notes TEXT,
+      color TEXT,
+      current_stock REAL,
+      stock_threshold REAL
+    );
+    INSERT INTO drugs_new SELECT id, name, dosage, form, quantity, notes, color, current_stock, stock_threshold FROM drugs;
+    DROP TABLE drugs;
+    ALTER TABLE drugs_new RENAME TO drugs;
+  `);
+}
+migrateV2ToV3();
 
 export function initDatabase(): void {
   // Tables already created at module level above.

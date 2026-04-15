@@ -9,6 +9,7 @@ import {
   Platform,
 } from "react-native";
 import { Stack, router } from "expo-router";
+import { Link } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { getColors } from "@/constants/colors";
@@ -66,6 +67,24 @@ export default function AddDrugScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Scan Prescription */}
+          <Link asChild href="/scan-prescription">
+            <Pressable
+              style={({ pressed }) => [
+                styles.scanButton,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons name="camera-plus-outline" size={20} color={colors.primary} />
+              <Text style={[styles.scanText, { color: colors.primary }]}>{t.scan.scanPrescription}</Text>
+              <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textTertiary} />
+            </Pressable>
+          </Link>
+
           {/* Name */}
           <View style={styles.section}>
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t.editDrug.name}</Text>
@@ -90,7 +109,7 @@ export default function AddDrugScreen() {
                 placeholder={t.reminders.qtyPlaceholder}
                 value={quantity > 0 ? String(quantity) : ""}
                 onChangeText={(text) => {
-                  const qty = parseInt(text, 10);
+                  const qty = parseFloat(text);
                   if (!isNaN(qty) && qty > 0) setQuantity(qty);
                 }}
                 keyboardType="numeric"
@@ -198,6 +217,21 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: Spacing.md },
   section: { marginBottom: Spacing.lg },
+  scanButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    marginBottom: Spacing.lg,
+  },
+  scanText: {
+    ...Typography.sm,
+    fontWeight: Typography.semibold,
+    flex: 1,
+  },
   sectionLabel: {
     ...Typography.xs,
     marginBottom: Spacing.sm,

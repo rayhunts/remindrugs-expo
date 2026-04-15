@@ -113,7 +113,7 @@ export function DrugFormRow({
           placeholderTextColor={colors.textTertiary}
           value={drug.quantity > 0 ? String(drug.quantity) : ""}
           onChangeText={(text) => {
-            const qty = parseInt(text, 10);
+            const qty = parseFloat(text);
             if (!isNaN(qty) && qty > 0) onUpdate(index, { quantity: qty });
           }}
           keyboardType="numeric"
@@ -244,7 +244,7 @@ export function DrugFormRow({
               : ""
           }
           onChangeText={(text) => {
-            const val = parseInt(text, 10);
+            const val = parseFloat(text);
             if (!isNaN(val) && val >= 0)
               onUpdate(index, { currentStock: val });
             else onUpdate(index, { currentStock: undefined });
@@ -270,7 +270,7 @@ export function DrugFormRow({
               : ""
           }
           onChangeText={(text) => {
-            const val = parseInt(text, 10);
+            const val = parseFloat(text);
             if (!isNaN(val) && val >= 0)
               onUpdate(index, { stockThreshold: val });
             else onUpdate(index, { stockThreshold: undefined });

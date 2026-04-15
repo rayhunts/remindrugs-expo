@@ -78,8 +78,8 @@ export default function EditDrugScreen() {
       quantity,
       notes: notes || undefined,
       color,
-      currentStock: currentStock ? parseInt(currentStock, 10) : undefined,
-      stockThreshold: stockThreshold ? parseInt(stockThreshold, 10) : undefined,
+      currentStock: currentStock ? parseFloat(currentStock) : undefined,
+      stockThreshold: stockThreshold ? parseFloat(stockThreshold) : undefined,
     };
 
     updateDrug(updated);
@@ -151,7 +151,7 @@ export default function EditDrugScreen() {
                 placeholder={t.reminders.qtyPlaceholder}
                 value={quantity > 0 ? String(quantity) : ""}
                 onChangeText={(text) => {
-                  const qty = parseInt(text, 10);
+                  const qty = parseFloat(text);
                   if (!isNaN(qty) && qty > 0) setQuantity(qty);
                 }}
                 keyboardType="numeric"
