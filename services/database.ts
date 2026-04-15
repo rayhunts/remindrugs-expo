@@ -327,6 +327,46 @@ export function deleteDrug(id: string): void {
   db.runSync("DELETE FROM drugs WHERE id = ?", id);
 }
 
+export function deductDrugStock(drugId: string): number | null {
+  const drug = getDrugById(drugId);
+  if (!drug || drug.currentStock === undefined || drug.currentStock <= 0) {
+    return null;
+  }
+
+  const newStock = Math.max(0, drug.currentStock - drug.quantity);
+  db.runSync(
+    "UPDATE drugs SET current_stock = ? WHERE id = ?",
+    newStock,
+    drugId,
+  );
+  return newStock;
+}
+
+export function getDrugsNeedingRefill(): Array<{ drug: Drug; reminderId: string }> {
+  const rows = db.getAllSync<{
+    id: string;
+    name: string;
+    dosage: string;
+    form: string;
+    quantity: number;
+    notes: string | null;
+    color: string | null;
+    current_stock: number | null;
+    stock_threshold: number | null;
+    reminder_id: string;
+  }>(
+    `SELECT d.*, rd.reminder_id
+     FROM drugs d
+     JOIN reminder_drugs rd ON d.id = rd.drug_id
+     WHERE d.current_stock IS NOT NULL AND d.stock_threshold IS NOT NULL AND d.current_stock <= d.stock_threshold`,
+  );
+
+  return rows.map((row) => ({
+    drug: mapDrugRow(row),
+    reminderId: row.reminder_id,
+  }));
+}
+
 // ── ReminderDrug Junction CRUD ───────────────────────────────────────────────
 
 export function getDrugsForReminder(reminderId: string): Drug[] {
