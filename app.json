@@ -4,7 +4,7 @@
     "slug": "remindrugs",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/appstore.png",
+    "icon": "./assets/images/icon.png",
     "scheme": "remindrugs",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -17,7 +17,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#16A34A",
-        "foregroundImage": "./assets/images/android/mipmap-xxxhdpi/ic_launcher.png"
+        "foregroundImage": "./assets/images/icon.png"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
@@ -29,7 +29,7 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/playstore.png"
+      "favicon": "./assets/images/icon.png"
     },
     "plugins": [
       "expo-router",
@@ -37,7 +37,8 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-screen.png",
-          "resizeMode": "cover"
+          "backgroundColor": "#16A34A",
+          "resizeMode": "contain"
         }
       ],
       "expo-sqlite",
@@ -49,7 +50,9 @@
       [
         "expo-notifications",
         {
-          "sounds": ["./assets/sounds/pill_bottle_shake.mp3"]
+          "sounds": [
+            "./assets/sounds/pill_bottle_shake.mp3"
+          ]
         }
       ],
       [
@@ -62,10 +65,13 @@
       [
         "rn-mlkit-ocr",
         {
-          "ocrModels": ["latin"],
+          "ocrModels": [
+            "latin"
+          ],
           "ocrUseBundled": true
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -1,7 +1,7 @@
 import type { Locale, TranslationKeys } from "@/locales";
 import { translations } from "@/locales";
-export type { Locale } from "@/locales";
 import { getSetting, setSetting } from "@/services/settings-service";
+import { getLocales } from "expo-localization";
 import {
   createContext,
   useCallback,
@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+export type { Locale } from "@/locales";
 
 interface LanguageContextValue {
   locale: Locale;
@@ -25,6 +26,13 @@ const LanguageContext = createContext<LanguageContextValue>({
 
 const VALID_LOCALES = new Set<string>(["en", "id"]);
 
+function detectDeviceLocale(): Locale {
+  const locales = getLocales();
+  const langCode = locales[0]?.languageCode;
+  if (langCode === "id") return "id";
+  return "en";
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("en");
 
@@ -32,6 +40,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const saved = getSetting("language");
     if (saved && VALID_LOCALES.has(saved)) {
       setLocaleState(saved as Locale);
+    } else {
+      const detected = detectDeviceLocale();
+      setLocaleState(detected);
+      setSetting("language", detected);
     }
   }, []);
 
