@@ -9,7 +9,9 @@ import {
   updateLogStatus as dbUpdateLogStatus,
   deleteLog as dbDeleteLog,
   deductDrugStock,
+  getDrugById,
 } from "@/services/database";
+import { checkAndScheduleRefillAlert } from "@/services/notification-service";
 import { toDateString, generateId } from "@/utils/date-helpers";
 import { drugEvents } from "@/services/event-bus";
 
@@ -61,6 +63,10 @@ export const useAdherenceStore = create<AdherenceState>((set, get) => ({
       const newStock = deductDrugStock(drugId);
       if (newStock !== null) {
         drugEvents.emit();
+        const drug = getDrugById(drugId);
+        if (drug) {
+          checkAndScheduleRefillAlert(drug, reminderId).catch(() => {});
+        }
       }
     }
   },

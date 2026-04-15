@@ -117,3 +117,22 @@ export async function scheduleRefillReminder(drug: Drug, reminderId: string): Pr
     trigger: null,
   });
 }
+
+export async function checkAndScheduleRefillAlert(
+  drug: Drug,
+  reminderId: string,
+): Promise<void> {
+  if (drug.currentStock === undefined || drug.stockThreshold === undefined) return;
+  if (drug.currentStock > drug.stockThreshold) return;
+
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: `Refill Needed: ${drug.name}`,
+      body: `Only ${drug.currentStock} ${drug.form}(s) remaining. Time to refill!`,
+      sound: "pill_bottle_shake.mp3",
+      data: { reminderId, drugId: drug.id, type: "refill" },
+      categoryIdentifier: "reminder-actions",
+    },
+    trigger: null, // immediate
+  });
+}
