@@ -1,5 +1,6 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
-import { Link } from "expo-router";
+import { View, Text, Pressable, StyleSheet, Alert, Platform, ActionSheetIOS, ScrollView } from "react-native";
+import { useCallback } from "react";
+import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { getColors } from "@/constants/colors";
 import { Typography } from "@/constants/typography";
@@ -36,26 +37,45 @@ export function DrugFormComponent({
   const colors = getColors(scheme);
   const { t } = useLanguage();
 
+  const handleScan = useCallback(() => {
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: [t.common.cancel, t.scan.takePhoto, t.scan.pickImage],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) router.push("/scan-prescription?source=camera");
+          if (buttonIndex === 2) router.push("/scan-prescription?source=gallery");
+        }
+      );
+    } else {
+      Alert.alert(t.scan.scanPrescription, undefined, [
+        { text: t.scan.takePhoto, onPress: () => router.push("/scan-prescription?source=camera") },
+        { text: t.scan.pickImage, onPress: () => router.push("/scan-prescription?source=gallery") },
+        { text: t.common.cancel, style: "cancel" },
+      ]);
+    }
+  }, [t]);
+
   return (
     <>
       {/* Scan Prescription */}
       {showScanLink && (
-        <Link asChild href="/scan-prescription">
-          <Pressable
-            style={({ pressed }) => [
-              styles.scanButton,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-                opacity: pressed ? 0.7 : 1,
-              },
-            ]}
-          >
-            <MaterialCommunityIcons name="camera-plus-outline" size={20} color={colors.primary} />
-            <Text style={[styles.scanText, { color: colors.primary }]}>{t.scan.scanPrescription}</Text>
-            <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textTertiary} />
-          </Pressable>
-        </Link>
+        <Pressable
+          onPress={handleScan}
+          style={({ pressed }) => [
+            styles.scanButton,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              opacity: pressed ? 0.7 : 1,
+            },
+          ]}
+        >
+          <MaterialCommunityIcons name="camera-plus-outline" size={20} color={colors.primary} />
+          <Text style={[styles.scanText, { color: colors.primary }]}>{t.scan.scanPrescription}</Text>
+        </Pressable>
       )}
 
       {/* Name */}
@@ -93,38 +113,40 @@ export function DrugFormComponent({
       {/* Form — visual grid */}
       <View style={styles.section}>
         <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t.reminders.form}</Text>
-        <View style={styles.formGrid}>
-          {DRUG_FORMS.map((f) => {
-            const selected = data.form === f.value;
-            return (
-              <Pressable
-                key={f.value}
-                onPress={() => onChange({ form: f.value })}
-                style={[
-                  styles.formGridItem,
-                  {
-                    backgroundColor: selected ? colors.primaryLight : colors.card,
-                    borderColor: selected ? colors.primary : colors.border,
-                  },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name={f.icon as any}
-                  size={24}
-                  color={selected ? colors.primary : colors.textSecondary}
-                />
-                <Text
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.formGridScroll}>
+          <View style={styles.formGrid}>
+            {DRUG_FORMS.map((f) => {
+              const selected = data.form === f.value;
+              return (
+                <Pressable
+                  key={f.value}
+                  onPress={() => onChange({ form: f.value })}
                   style={[
-                    styles.formGridLabel,
-                    { color: selected ? colors.primary : colors.textSecondary },
+                    styles.formGridItem,
+                    {
+                      backgroundColor: selected ? colors.primaryLight : colors.card,
+                      borderColor: selected ? colors.primary : colors.border,
+                    },
                   ]}
                 >
-                  {f.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+                  <MaterialCommunityIcons
+                    name={f.icon as any}
+                    size={24}
+                    color={selected ? colors.primary : colors.textSecondary}
+                  />
+                  <Text
+                    style={[
+                      styles.formGridLabel,
+                      { color: selected ? colors.primary : colors.textSecondary },
+                    ]}
+                  >
+                    {f.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </ScrollView>
       </View>
 
       {/* Notes */}
@@ -205,7 +227,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     borderRadius: Radius.md,
     borderWidth: 1,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   scanText: {
     ...Typography.sm,
@@ -225,13 +247,16 @@ const styles = StyleSheet.create({
   },
   flex1: { flex: 1 },
   qtyInput: { width: 70, flex: undefined },
+  formGridScroll: {
+    flexGrow: 0,
+  },
   formGrid: {
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: Spacing.sm,
   },
   formGridItem: {
-    width: "30%",
+    minWidth: 90,
+    paddingHorizontal: Spacing.md,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: Spacing.md,
@@ -261,7 +286,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 2,
   },
-  stockCard: { borderRadius: Radius.md, padding: Spacing.md, borderWidth: 1 },
+  stockCard: { borderRadius: Radius.md, padding: Spacing.md, borderWidth: 1, marginBottom: Spacing.lg },
   stockCardLabel: { ...Typography.sm, fontWeight: Typography.semibold },
   stockHint: { ...Typography.xs, marginTop: Spacing.xs, fontStyle: "italic" },
 });
