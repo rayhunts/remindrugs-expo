@@ -9,6 +9,9 @@
     "web": "expo start --web",
     "lint": "expo lint"
   },
+  "trustedDependencies": [
+    "@shopify/react-native-skia"
+  ],
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
     "@gorhom/bottom-sheet": "^5.2.9",
