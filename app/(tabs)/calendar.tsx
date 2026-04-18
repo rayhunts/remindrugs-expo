@@ -223,8 +223,8 @@ export default function CalendarScreen() {
       },
       "stylesheet.day.basic": {
         base: {
-          width: 32,
-          height: 32,
+          width: 40,
+          height: 40,
           alignItems: "center" as unknown as string,
           justifyContent: "center" as unknown as string,
         },
@@ -232,7 +232,7 @@ export default function CalendarScreen() {
           ...Typography.sm,
           color: colors.textPrimary,
           textAlign: "center" as unknown as string,
-          lineHeight: 28,
+          lineHeight: 32,
         },
         today: {
           backgroundColor: colors.primaryLight,
@@ -243,7 +243,7 @@ export default function CalendarScreen() {
           fontWeight: Typography.bold as unknown as number,
           color: colors.primary,
           textAlign: "center" as unknown as string,
-          lineHeight: 28,
+          lineHeight: 32,
         },
         selected: {
           backgroundColor: colors.primary,
@@ -254,7 +254,7 @@ export default function CalendarScreen() {
           fontWeight: Typography.bold as unknown as number,
           color: colors.textInverse,
           textAlign: "center" as unknown as string,
-          lineHeight: 28,
+          lineHeight: 32,
         },
       },
       "stylesheet.day.multiDot": {
