@@ -16,6 +16,7 @@ import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useLanguage } from "@/contexts/language-context";
+import { useHeaderStyle } from "@/hooks/use-header-style";
 import { generateReport, type Report, type DrugReport } from "@/services/report-generator";
 
 type PeriodOption = 7 | 30 | 90;
@@ -24,6 +25,7 @@ export default function ReportScreen() {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
   const { t } = useLanguage();
+  useHeaderStyle();
   const [period, setPeriod] = useState<PeriodOption>(30);
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(false);
@@ -265,7 +267,7 @@ function DailyRow({ day, colors }: { day: { date: string; taken: number; missed:
       <Text style={[styles.dailyDate, { color: colors.textPrimary }]}>
         {day.date.slice(5)}
       </Text>
-      <View style={styles.dailyBar}>
+      <View style={[styles.dailyBar, { backgroundColor: colors.divider }]}>
         {pct >= 0 && (
           <View style={[styles.dailyBarFill, {
             backgroundColor: pct >= 80 ? colors.success : pct >= 50 ? colors.warning : colors.danger,
@@ -481,7 +483,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 6,
     borderRadius: Radius.full,
-    backgroundColor: "rgba(0,0,0,0.06)",
+    backgroundColor: "rgba(0,0,0,0.06)", // overridden inline via colors.divider
     overflow: "hidden",
   },
   dailyBarFill: {

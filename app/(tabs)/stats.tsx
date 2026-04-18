@@ -245,7 +245,7 @@ export default function StatsScreen() {
                     {drug.taken}/{drug.total}
                   </Text>
                 </View>
-                <View style={styles.drugBarWrap}>
+                <View style={[styles.drugBarWrap, { backgroundColor: colors.divider }]}>
                   <View
                     style={[
                       styles.drugBar,
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
   drugBarWrap: {
     flex: 1,
     height: 8,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: "#F1F5F9", // overridden inline via colors.divider
     borderRadius: 4,
     overflow: "hidden",
   },

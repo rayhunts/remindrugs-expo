@@ -48,6 +48,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     gap: Spacing.sm,
+    marginBottom: Spacing.md,
   },
   streakCard: {
     flex: 1,
