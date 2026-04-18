@@ -438,7 +438,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: Spacing.sm,
-    marginBottom: Spacing.md,
   },
   formChip: {
     paddingHorizontal: Spacing.sm,

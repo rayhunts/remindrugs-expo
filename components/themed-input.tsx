@@ -64,6 +64,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     ...Typography.base,
-    marginBottom: Spacing.md,
   },
 });
