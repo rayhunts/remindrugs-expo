@@ -72,8 +72,6 @@ export function ReminderCard({
   const skippedCount = drugs.filter((d) => skippedDrugIds.has(`${reminder.id}:${d.id}`)).length;
   const allDone = takenCount === totalDrugs;
   const someDone = takenCount > 0 || skippedCount > 0;
-  const noneDone = takenCount === 0 && skippedCount === 0;
-
   const swipeableRef = useRef<SwipeableMethods>(null);
 
   const handleTakeAll = useCallback(() => {
@@ -170,45 +168,6 @@ export function ReminderCard({
           {drugs.length > 3 && <MoreChip count={drugs.length - 3} />}
         </View>
 
-        {/* Actions */}
-        {noneDone && (
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              onMarkAll();
-            }}
-            style={[styles.takenButton, { backgroundColor: colors.success }]}
-            accessibilityLabel={t.components.markAllTakenA11y.replace("{name}", reminder.name)}
-          >
-            <MaterialCommunityIcons name="check" size={16} color={colors.textInverse} />
-            <Text style={[styles.takenText, { color: colors.textInverse }]}>
-              {t.components.markAllTaken}
-            </Text>
-          </Pressable>
-        )}
-
-        {someDone && !allDone && (
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              onMarkAll();
-            }}
-            style={[styles.takenButton, { backgroundColor: colors.primary }]}
-          >
-            <MaterialCommunityIcons name="check" size={16} color={colors.textInverse} />
-            <Text style={[styles.takenText, { color: colors.textInverse }]}>
-              {t.components.markRemaining.replace("{count}", String(totalDrugs - takenCount - skippedCount))}
-            </Text>
-          </Pressable>
-        )}
-
-        {allDone && (
-          <View style={[styles.takenBadge, { backgroundColor: colors.successLight }]}>
-            <Text style={[styles.takenBadgeText, { color: colors.success }]}>
-              {t.components.allTaken}
-            </Text>
-          </View>
-        )}
       </View>
     </Pressable>
   );
@@ -281,27 +240,5 @@ const styles = StyleSheet.create({
   drugRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginBottom: Spacing.md,
-  },
-  takenButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: Spacing.xs,
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.sm,
-  },
-  takenText: {
-    ...Typography.sm,
-    fontWeight: Typography.semibold,
-  },
-  takenBadge: {
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.xs,
-    alignItems: "center",
-  },
-  takenBadgeText: {
-    ...Typography.sm,
-    fontWeight: Typography.semibold,
   },
 });
