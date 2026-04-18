@@ -1,15 +1,34 @@
-import { Platform } from "react-native";
+import { Platform, type TextStyle } from "react-native";
 
-export const Typography = {
-  fontFamily: Platform.select({
+export const FontFamily = {
+  default: Platform.select({
     ios: "System",
     android: "Roboto",
     default: "System",
   }),
+  mono: Platform.select({
+    ios: "Menlo",
+    android: "Roboto Mono",
+    default: "monospace",
+  }),
+} as const;
+
+export const dataLabel: TextStyle = {
+  letterSpacing: -0.2,
+};
+
+export const data = {
+  fontSize: 14,
+  lineHeight: 20,
+  fontWeight: "500" as const,
+};
+
+export const Typography = {
+  fontFamily: FontFamily.default,
 
   xs: { fontSize: 11, lineHeight: 16 },
   sm: { fontSize: 13, lineHeight: 18 },
-  base: { fontSize: 15, lineHeight: 22 },
+  base: { fontSize: 16, lineHeight: 22 },
   md: { fontSize: 17, lineHeight: 24 },
   lg: { fontSize: 20, lineHeight: 28 },
   xl: { fontSize: 24, lineHeight: 32 },

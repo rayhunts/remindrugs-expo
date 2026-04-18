@@ -1,0 +1,99 @@
+{
+  "interactions": [
+    { "drug1": "warfarin", "drug1Aliases": ["coumadin", "jantoven"], "drug2": "aspirin", "drug2Aliases": ["acetylsalicylic acid", "asa", "ecotrin", "bufferin"], "severity": "severe", "description": "Increased risk of bleeding. Combined use significantly increases anticoagulant effect." },
+    { "drug1": "warfarin", "drug1Aliases": ["coumadin", "jantoven"], "drug2": "ibuprofen", "drug2Aliases": ["advil", "motrin", "nurofen"], "severity": "severe", "description": "Increased risk of gastrointestinal bleeding. NSAIDs enhance anticoagulant effect." },
+    { "drug1": "warfarin", "drug1Aliases": ["coumadin", "jantoven"], "drug2": "naproxen", "drug2Aliases": ["aleve", "naprosyn"], "severity": "severe", "description": "Increased risk of bleeding. NSAIDs potentiate warfarin's effect." },
+    { "drug1": "warfarin", "drug1Aliases": ["coumadin", "jantoven"], "drug2": "amiodarone", "drug2Aliases": ["cordarone", "pacerone"], "severity": "severe", "description": "Amiodarone inhibits warfarin metabolism, greatly increasing INR and bleeding risk." },
+    { "drug1": "warfarin", "drug1Aliases": ["coumadin", "jantoven"], "drug2": "fluconazole", "drug2Aliases": ["diflucan"], "severity": "severe", "description": "Fluconazole inhibits CYP2C9, increasing warfarin levels and bleeding risk." },
+    { "drug1": "warfarin", "drug1Aliases": ["coumadin", "jantoven"], "drug2": "metronidazole", "drug2Aliases": ["flagyl"], "severity": "moderate", "description": "Metronidazole potentiates anticoagulant effect of warfarin." },
+    { "drug1": "warfarin", "drug1Aliases": ["coumadin", "jantoven"], "drug2": "ciprofloxacin", "drug2Aliases": ["cipro"], "severity": "moderate", "description": "Ciprofloxacin may increase warfarin levels and bleeding risk." },
+    { "drug1": "warfarin", "drug1Aliases": ["coumadin", "jantoven"], "drug2": "atorvastatin", "drug2Aliases": ["lipitor"], "severity": "mild", "description": "Minor interaction. Atorvastatin may slightly increase warfarin effect." },
+    { "drug1": "warfarin", "drug1Aliases": ["coumadin", "jantoven"], "drug2": "phenytoin", "drug2Aliases": ["dilantin"], "severity": "moderate", "description": "Complex interaction affecting metabolism of both drugs. Requires close monitoring." },
+    { "drug1": "warfarin", "drug1Aliases": ["coumadin", "jantoven"], "drug2": "carbamazepine", "drug2Aliases": ["tegretol"], "severity": "moderate", "description": "Carbamazepine induces warfarin metabolism, reducing anticoagulant effect." },
+
+    { "drug1": "lisinopril", "drug1Aliases": ["zestril", "prinivil"], "drug2": "potassium", "drug2Aliases": ["kcl", "potassium chloride", "k-dur"], "severity": "moderate", "description": "ACE inhibitors reduce potassium excretion. Combined use may cause hyperkalemia." },
+    { "drug1": "lisinopril", "drug1Aliases": ["zestril", "prinivil"], "drug2": "spironolactone", "drug2Aliases": ["aldactone"], "severity": "moderate", "description": "Both drugs can increase potassium levels. Monitor serum potassium closely." },
+    { "drug1": "lisinopril", "drug1Aliases": ["zestril", "prinivil"], "drug2": "ibuprofen", "drug2Aliases": ["advil", "motrin", "nurofen"], "severity": "moderate", "description": "NSAIDs may reduce the antihypertensive effect of ACE inhibitors and impair renal function." },
+    { "drug1": "lisinopril", "drug1Aliases": ["zestril", "prinivil"], "drug2": "naproxen", "drug2Aliases": ["aleve", "naprosyn"], "severity": "moderate", "description": "NSAIDs may reduce the antihypertensive effect of ACE inhibitors and impair renal function." },
+    { "drug1": "lisinopril", "drug1Aliases": ["zestril", "prinivil"], "drug2": "losartan", "drug2Aliases": ["cozaar"], "severity": "moderate", "description": "Combining ACE inhibitors with ARBs increases risk of hyperkalemia and renal impairment." },
+
+    { "drug1": "metformin", "drug1Aliases": ["glucophage", "fortamet"], "drug2": "alcohol", "drug2Aliases": ["ethanol"], "severity": "moderate", "description": "Increased risk of lactic acidosis with excessive alcohol consumption." },
+    { "drug1": "metformin", "drug1Aliases": ["glucophage", "fortamet"], "drug2": "cimetidine", "drug2Aliases": ["tagamet"], "severity": "mild", "description": "Cimetidine may increase metformin levels by reducing renal clearance." },
+
+    { "drug1": "amlodipine", "drug1Aliases": ["norvasc"], "drug2": "simvastatin", "drug2Aliases": ["zocor"], "severity": "moderate", "description": "Amlodipine increases simvastatin levels. Limit simvastatin dose to 20mg/day with amlodipine." },
+    { "drug1": "amlodipine", "drug1Aliases": ["norvasc"], "drug2": "atorvastatin", "drug2Aliases": ["lipitor"], "severity": "mild", "description": "Minor increase in atorvastatin levels. Usually clinically insignificant." },
+    { "drug1": "amlodipine", "drug1Aliases": ["norvasc"], "drug2": "diltiazem", "drug2Aliases": ["cardizem", "tiazac"], "severity": "moderate", "description": "Both are calcium channel blockers. Additive effects may cause excessive hypotension or bradycardia." },
+    { "drug1": "amlodipine", "drug1Aliases": ["norvasc"], "drug2": "grapefruit", "drug2Aliases": ["grapefruit juice"], "severity": "mild", "description": "Grapefruit may slightly increase amlodipine levels, potentially enhancing blood pressure lowering." },
+
+    { "drug1": "atorvastatin", "drug1Aliases": ["lipitor"], "drug2": "clarithromycin", "drug2Aliases": ["biaxin"], "severity": "severe", "description": "Clarithromycin inhibits CYP3A4, greatly increasing statin levels and risk of rhabdomyolysis." },
+    { "drug1": "atorvastatin", "drug1Aliases": ["lipitor"], "drug2": "erythromycin", "drug2Aliases": [], "severity": "severe", "description": "Erythromycin inhibits CYP3A4, increasing statin levels and risk of muscle toxicity." },
+    { "drug1": "atorvastatin", "drug1Aliases": ["lipitor"], "drug2": "itraconazole", "drug2Aliases": ["sporanox"], "severity": "severe", "description": "Strong CYP3A4 inhibitor. Greatly increases statin levels and risk of rhabdomyolysis." },
+    { "drug1": "atorvastatin", "drug1Aliases": ["lipitor"], "drug2": "ketoconazole", "drug2Aliases": ["nizoral"], "severity": "severe", "description": "Strong CYP3A4 inhibitor. Greatly increases statin levels and risk of rhabdomyolysis." },
+    { "drug1": "atorvastatin", "drug1Aliases": ["lipitor"], "drug2": "gemfibrozil", "drug2Aliases": ["lopid"], "severity": "severe", "description": "Increased risk of rhabdomyolysis and acute kidney injury. Avoid combination." },
+    { "drug1": "simvastatin", "drug1Aliases": ["zocor"], "drug2": "clarithromycin", "drug2Aliases": ["biaxin"], "severity": "severe", "description": "Clarithromycin inhibits CYP3A4, greatly increasing simvastatin levels. Avoid combination." },
+    { "drug1": "simvastatin", "drug1Aliases": ["zocor"], "drug2": "gemfibrozil", "drug2Aliases": ["lopid"], "severity": "severe", "description": "Significantly increased risk of rhabdomyolysis. Avoid combination." },
+    { "drug1": "simvastatin", "drug1Aliases": ["zocor"], "drug2": "itraconazole", "drug2Aliases": ["sporanox"], "severity": "severe", "description": "Strong CYP3A4 inhibitor. Contraindicated with simvastatin." },
+    { "drug1": "simvastatin", "drug1Aliases": ["zocor"], "drug2": "erythromycin", "drug2Aliases": [], "severity": "severe", "description": "Erythromycin greatly increases simvastatin levels. Avoid combination." },
+
+    { "drug1": "omeprazole", "drug1Aliases": ["prilosec", "losec"], "drug2": "clopidogrel", "drug2Aliases": ["plavix"], "severity": "severe", "description": "Omeprazole reduces the antiplatelet effect of clopidogrel by inhibiting CYP2C19." },
+    { "drug1": "omeprazole", "drug1Aliases": ["prilosec", "losec"], "drug2": "diazepam", "drug2Aliases": ["valium"], "severity": "mild", "description": "Omeprazole may increase diazepam levels by reducing hepatic clearance." },
+    { "drug1": "omeprazole", "drug1Aliases": ["prilosec", "losec"], "drug2": "methotrexate", "drug2Aliases": ["trexall", "rheumatrex"], "severity": "moderate", "description": "PPIs may reduce methotrexate clearance, increasing toxicity risk." },
+    { "drug1": "omeprazole", "drug1Aliases": ["prilosec", "losec"], "drug2": "warfarin", "drug2Aliases": ["coumadin", "jantoven"], "severity": "mild", "description": "Omeprazole may slightly increase warfarin effect. Monitor INR." },
+
+    { "drug1": "clopidogrel", "drug1Aliases": ["plavix"], "drug2": "aspirin", "drug2Aliases": ["acetylsalicylic acid", "asa", "ecotrin"], "severity": "moderate", "description": "Combined use increases bleeding risk. Often prescribed together but requires monitoring." },
+    { "drug1": "clopidogrel", "drug1Aliases": ["plavix"], "drug2": "ibuprofen", "drug2Aliases": ["advil", "motrin", "nurofen"], "severity": "moderate", "description": "Increased risk of gastrointestinal bleeding with combined antiplatelet and NSAID use." },
+    { "drug1": "clopidogrel", "drug1Aliases": ["plavix"], "drug2": "naproxen", "drug2Aliases": ["aleve", "naprosyn"], "severity": "moderate", "description": "Increased risk of gastrointestinal bleeding." },
+    { "drug1": "clopidogrel", "drug1Aliases": ["plavix"], "drug2": "fluoxetine", "drug2Aliases": ["prozac", "sarafem"], "severity": "moderate", "description": "SSRIs with antiplatelet drugs increase bleeding risk." },
+    { "drug1": "clopidogrel", "drug1Aliases": ["plavix"], "drug2": "sertraline", "drug2Aliases": ["zoloft"], "severity": "moderate", "description": "SSRIs with antiplatelet drugs increase bleeding risk." },
+
+    { "drug1": "sertraline", "drug1Aliases": ["zoloft"], "drug2": "ibuprofen", "drug2Aliases": ["advil", "motrin", "nurofen"], "severity": "moderate", "description": "SSRIs with NSAIDs increase risk of gastrointestinal bleeding." },
+    { "drug1": "sertraline", "drug1Aliases": ["zoloft"], "drug2": "tramadol", "drug2Aliases": ["ultram"], "severity": "moderate", "description": "Increased risk of serotonin syndrome and seizure risk." },
+    { "drug1": "sertraline", "drug1Aliases": ["zoloft"], "drug2": "sumatriptan", "drug2Aliases": ["imitrex"], "severity": "moderate", "description": "Risk of serotonin syndrome with SSRI and triptan combination." },
+    { "drug1": "fluoxetine", "drug1Aliases": ["prozac", "sarafem"], "drug2": "tramadol", "drug2Aliases": ["ultram"], "severity": "moderate", "description": "Increased risk of serotonin syndrome." },
+    { "drug1": "fluoxetine", "drug1Aliases": ["prozac", "sarafem"], "drug2": "ibuprofen", "drug2Aliases": ["advil", "motrin", "nurofen"], "severity": "moderate", "description": "SSRIs with NSAIDs increase risk of gastrointestinal bleeding." },
+
+    { "drug1": "metoprolol", "drug1Aliases": ["lopressor", "toprol xl"], "drug2": "albuterol", "drug2Aliases": ["proair", "ventolin", "salbutamol"], "severity": "moderate", "description": "Beta-blockers may antagonize bronchodilator effects of albuterol." },
+    { "drug1": "metoprolol", "drug1Aliases": ["lopressor", "toprol xl"], "drug2": "insulin", "drug2Aliases": ["humulin", "novolin", "lantus", "glargine"], "severity": "mild", "description": "Beta-blockers may mask symptoms of hypoglycemia (tachycardia, tremor)." },
+    { "drug1": "metoprolol", "drug1Aliases": ["lopressor", "toprol xl"], "drug2": "verapamil", "drug2Aliases": ["calan", "verelan"], "severity": "severe", "description": "Combined use may cause severe bradycardia, heart block, or cardiac arrest." },
+    { "drug1": "metoprolol", "drug1Aliases": ["lopressor", "toprol xl"], "drug2": "diltiazem", "drug2Aliases": ["cardizem", "tiazac"], "severity": "moderate", "description": "Additive effects on heart rate. Risk of bradycardia and hypotension." },
+    { "drug1": "metoprolol", "drug1Aliases": ["lopressor", "toprol xl"], "drug2": "fluoxetine", "drug2Aliases": ["prozac", "sarafem"], "severity": "mild", "description": "Fluoxetine may inhibit metoprolol metabolism, increasing its effects." },
+
+    { "drug1": "amoxicillin", "drug1Aliases": ["amoxil", "trimox"], "drug2": "methotrexate", "drug2Aliases": ["trexall", "rheumatrex"], "severity": "moderate", "description": "Amoxicillin may reduce methotrexate clearance, increasing toxicity." },
+    { "drug1": "amoxicillin", "drug1Aliases": ["amoxil", "trimox"], "drug2": "allopurinol", "drug2Aliases": ["zyloprim", "aloprim"], "severity": "mild", "description": "Increased incidence of skin rash with combined use." },
+    { "drug1": "amoxicillin", "drug1Aliases": ["amoxil", "trimox"], "drug2": "warfarin", "drug2Aliases": ["coumadin", "jantoven"], "severity": "mild", "description": "May enhance anticoagulant effect. Monitor INR closely." },
+
+    { "drug1": "levothyroxine", "drug1Aliases": ["synthroid", "levoxyl", "eltroxin"], "drug2": "calcium", "drug2Aliases": ["calcium carbonate", "tums", "caltrate"], "severity": "moderate", "description": "Calcium reduces absorption of levothyroxine. Separate doses by at least 4 hours." },
+    { "drug1": "levothyroxine", "drug1Aliases": ["synthroid", "levoxyl", "eltroxin"], "drug2": "iron", "drug2Aliases": ["ferrous sulfate", "feosol"], "severity": "moderate", "description": "Iron supplements reduce levothyroxine absorption. Separate by at least 4 hours." },
+    { "drug1": "levothyroxine", "drug1Aliases": ["synthroid", "levoxyl", "eltroxin"], "drug2": "omeprazole", "drug2Aliases": ["prilosec", "losec"], "severity": "mild", "description": "PPIs may reduce levothyroxine absorption due to altered gastric pH." },
+
+    { "drug1": "prednisone", "drug1Aliases": ["deltasone", "prednisolone"], "drug2": "ibuprofen", "drug2Aliases": ["advil", "motrin", "nurofen"], "severity": "moderate", "description": "Combined use significantly increases risk of gastrointestinal ulceration and bleeding." },
+    { "drug1": "prednisone", "drug1Aliases": ["deltasone", "prednisolone"], "drug2": "naproxen", "drug2Aliases": ["aleve", "naprosyn"], "severity": "moderate", "description": "Combined use increases risk of GI ulceration and bleeding." },
+    { "drug1": "prednisone", "drug1Aliases": ["deltasone", "prednisolone"], "drug2": "metformin", "drug2Aliases": ["glucophage", "fortamet"], "severity": "mild", "description": "Corticosteroids may increase blood glucose, counteracting metformin effect." },
+
+    { "drug1": "losartan", "drug1Aliases": ["cozaar"], "drug2": "potassium", "drug2Aliases": ["kcl", "potassium chloride", "k-dur"], "severity": "moderate", "description": "ARBs reduce potassium excretion. Combined use may cause hyperkalemia." },
+    { "drug1": "losartan", "drug1Aliases": ["cozaar"], "drug2": "ibuprofen", "drug2Aliases": ["advil", "motrin", "nurofen"], "severity": "moderate", "description": "NSAIDs may reduce the antihypertensive effect and impair renal function." },
+    { "drug1": "losartan", "drug1Aliases": ["cozaar"], "drug2": "spironolactone", "drug2Aliases": ["aldactone"], "severity": "moderate", "description": "Both drugs increase potassium. Monitor serum potassium closely." },
+
+    { "drug1": "digoxin", "drug1Aliases": ["lanoxin"], "drug2": "amiodarone", "drug2Aliases": ["cordarone", "pacerone"], "severity": "moderate", "description": "Amiodarone increases digoxin levels. Reduce digoxin dose by 50%." },
+    { "drug1": "digoxin", "drug1Aliases": ["lanoxin"], "drug2": "verapamil", "drug2Aliases": ["calan", "verelan"], "severity": "moderate", "description": "Verapamil increases digoxin levels and additive AV node suppression." },
+    { "drug1": "digoxin", "drug1Aliases": ["lanoxin"], "drug2": "spironolactone", "drug2Aliases": ["aldactone"], "severity": "mild", "description": "Spironolactone may increase digoxin levels and alter potassium balance." },
+
+    { "drug1": "alprazolam", "drug1Aliases": ["xanax"], "drug2": "tramadol", "drug2Aliases": ["ultram"], "severity": "severe", "description": "Combined CNS and respiratory depression. Increased risk of sedation and overdose." },
+    { "drug1": "alprazolam", "drug1Aliases": ["xanax"], "drug2": "codeine", "drug2Aliases": [], "severity": "severe", "description": "Combined CNS depression increases risk of respiratory depression and death." },
+    { "drug1": "alprazolam", "drug1Aliases": ["xanax"], "drug2": "ketoconazole", "drug2Aliases": ["nizoral"], "severity": "severe", "description": "Ketoconazole strongly inhibits alprazolam metabolism. Contraindicated." },
+    { "drug1": "alprazolam", "drug1Aliases": ["xanax"], "drug2": "itraconazole", "drug2Aliases": ["sporanox"], "severity": "severe", "description": "Itraconazole strongly inhibits alprazolam metabolism. Contraindicated." },
+
+    { "drug1": "tramadol", "drug1Aliases": ["ultram"], "drug2": "codeine", "drug2Aliases": [], "severity": "moderate", "description": "Both are opioid analgesics. Additive CNS depression and seizure risk." },
+    { "drug1": "tramadol", "drug1Aliases": ["ultram"], "drug2": "carbamazepine", "drug2Aliases": ["tegretol"], "severity": "moderate", "description": "Carbamazepine reduces tramadol analgesic effect by inducing metabolism." },
+
+    { "drug1": "sildenafil", "drug1Aliases": ["viagra", "revatio"], "drug2": "nitroglycerin", "drug2Aliases": ["nitrostat", "nitro-bid", "isosorbide"], "severity": "severe", "description": "Life-threatening hypotension. Contraindicated combination. Wait 24-48h after PDE5 inhibitor." },
+    { "drug1": "sildenafil", "drug1Aliases": ["viagra", "revatio"], "drug2": "isosorbide mononitrate", "drug2Aliases": ["imdur", "ismo"], "severity": "severe", "description": "Life-threatening hypotension. Absolutely contraindicated." },
+    { "drug1": "sildenafil", "drug1Aliases": ["viagra", "revatio"], "drug2": "amlodipine", "drug2Aliases": ["norvasc"], "severity": "mild", "description": "Additive blood pressure lowering. Usually manageable but monitor." },
+
+    { "drug1": "phenytoin", "drug1Aliases": ["dilantin"], "drug2": "carbamazepine", "drug2Aliases": ["tegretol"], "severity": "moderate", "description": "Mutual metabolic induction. Both drugs may have altered effectiveness." },
+    { "drug1": "phenytoin", "drug1Aliases": ["dilantin"], "drug2": "valproic acid", "drug2Aliases": ["depakote", "depakene", "valproate"], "severity": "moderate", "description": "Valproic acid increases free phenytoin levels by displacing protein binding." },
+
+    { "drug1": "hydrochlorothiazide", "drug1Aliases": ["hctz", "hydrodiuril", "microzide"], "drug2": "lithium", "drug2Aliases": ["lithobid", "eskalith"], "severity": "severe", "description": "Thiazides reduce lithium renal clearance, increasing lithium toxicity risk." },
+    { "drug1": "hydrochlorothiazide", "drug1Aliases": ["hctz", "hydrodiuril", "microzide"], "drug2": "digoxin", "drug2Aliases": ["lanoxin"], "severity": "mild", "description": "Thiazide-induced hypokalemia may increase digoxin toxicity risk." }
+  ]
+}

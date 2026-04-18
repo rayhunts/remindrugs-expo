@@ -20,6 +20,7 @@ import { useReminders } from "@/hooks/use-reminders";
 import type { ReminderWithDrugs } from "@/hooks/use-reminders";
 import { useAdherence } from "@/hooks/use-adherence";
 import { ReminderCard } from "@/components/reminder-card";
+import { WeeklyChart } from "@/components/weekly-chart";
 import { SkeletonCard } from "@/components/skeleton-card";
 import { EmptyState } from "@/components/empty-state";
 import { PermissionBanner } from "@/components/permission-banner";
@@ -47,6 +48,61 @@ function getTimePeriod(hour: number, t: { home: { morning: string; afternoon: st
 type HomeListItem =
   | { type: "period"; label: string; id: string }
   | { type: "reminder"; reminder: ReminderWithDrugs; id: string };
+
+function NextDoseCard({ reminders, takenDrugIds, skippedDrugIds, colors, t }: {
+  reminders: ReminderWithDrugs[];
+  takenDrugIds: Set<string>;
+  skippedDrugIds: Set<string>;
+  colors: ReturnType<typeof getColors>;
+  t: ReturnType<typeof useLanguage>["t"];
+}) {
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const nextReminder = useMemo(() => {
+    const pending = reminders
+      .filter((r) => {
+        const reminderMinutes = r.hour * 60 + r.minute;
+        if (reminderMinutes <= currentMinutes) return false;
+        return !r.drugs.every(
+          (d) => takenDrugIds.has(`${r.id}:${d.id}`) || skippedDrugIds.has(`${r.id}:${d.id}`)
+        );
+      })
+      .sort((a, b) => (a.hour * 60 + a.minute) - (b.hour * 60 + b.minute));
+
+    return pending[0] ?? null;
+  }, [reminders, currentMinutes, takenDrugIds, skippedDrugIds]);
+
+  if (!nextReminder) return null;
+
+  const reminderMinutes = nextReminder.hour * 60 + nextReminder.minute;
+  const diff = reminderMinutes - currentMinutes;
+  const hoursLeft = Math.floor(diff / 60);
+  const minutesLeft = diff % 60;
+
+  const timeLabel = hoursLeft > 0
+    ? `${hoursLeft}h ${minutesLeft}m`
+    : `${minutesLeft}m`;
+
+  return (
+    <View style={[styles.nextDoseCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={styles.nextDoseLeft}>
+        <MaterialCommunityIcons name="clock-outline" size={18} color={colors.primary} />
+        <Text style={[styles.nextDoseLabel, { color: colors.textSecondary }]}>
+          Next Dose
+        </Text>
+      </View>
+      <View style={styles.nextDoseRight}>
+        <Text style={[styles.nextDoseTime, { color: colors.textPrimary }]}>
+          {formatTime(nextReminder.hour, nextReminder.minute)}
+        </Text>
+        <Text style={[styles.nextDoseCountdown, { color: colors.primary }]}>
+          in {timeLabel}
+        </Text>
+      </View>
+    </View>
+  );
+}
 
 export default function HomeScreen() {
   const scheme = useColorScheme();
@@ -88,7 +144,6 @@ export default function HomeScreen() {
     [logs, todayDateStr],
   );
 
-  // Per-reminder-drug tracking (composite keys so same drug in different reminders is independent)
   const takenDrugIds = useMemo(
     () => new Set(todayLogs.filter((l) => l.status === "taken").map((l) => `${l.reminderId}:${l.drugId}`)),
     [todayLogs],
@@ -99,7 +154,6 @@ export default function HomeScreen() {
     [todayLogs],
   );
 
-  // Progress counts total drug-doses, not reminders
   const totalDrugDoses = todayReminders.reduce((sum, r) => sum + r.drugs.length, 0);
   const takenDrugCount = todayReminders.reduce(
     (sum, r) => sum + r.drugs.filter((d) => takenDrugIds.has(`${r.id}:${d.id}`)).length,
@@ -185,7 +239,6 @@ export default function HomeScreen() {
     const sorted = [...todayReminders].sort((a, b) =>
       a.hour !== b.hour ? a.hour - b.hour : a.minute - b.minute,
     );
-    // A reminder is "fully done" if all its drugs are taken or skipped
     const isFullyDone = (r: ReminderWithDrugs) =>
       r.drugs.every((d) => takenDrugIds.has(`${r.id}:${d.id}`) || skippedDrugIds.has(`${r.id}:${d.id}`));
 
@@ -296,37 +349,52 @@ export default function HomeScreen() {
               <PermissionBanner onDismiss={() => setShowPermissionBanner(false)} />
             )}
 
+            {/* Greeting */}
             <View style={styles.greetingRow}>
               <View style={styles.greetingLeft}>
                 <Text style={[styles.greeting, { color: colors.textPrimary }]}>
                   {greeting.text}
                 </Text>
-                <Text style={[styles.date, { color: colors.textSecondary }]}>{todayStr}</Text>
+                <Text style={[styles.date, { color: colors.textTertiary }]}>{todayStr}</Text>
               </View>
               <View
                 style={[styles.greetingIcon, { backgroundColor: colors.primaryLight }]}
               >
-                <MaterialCommunityIcons name={greeting.icon as any} size={24} color={colors.primary} />
+                <MaterialCommunityIcons name={greeting.icon as any} size={22} color={colors.primary} />
               </View>
             </View>
 
+            {/* Progress card */}
             {totalDrugDoses > 0 && (
-              <View style={[styles.progressCard, { backgroundColor: colors.primaryLight }]}>
-                <View style={styles.progressInfo}>
-                  <MaterialCommunityIcons
-                    name={allDone ? "check-circle" : "clock-outline"}
-                    size={20}
-                    color={allDone ? colors.success : colors.primary}
-                  />
-                  <Text
-                    style={[styles.progressTitle, { color: allDone ? colors.success : colors.primary }]}
-                  >
-                    {allDone
-                      ? t.home.allDone
-                      : `${totalDrugDoses - takenDrugCount} ${totalDrugDoses - takenDrugCount !== 1 ? t.home.dosesRemaining : t.home.doseRemaining}`}
-                  </Text>
+              <View style={[styles.progressCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={styles.progressTop}>
+                  <View style={styles.progressLeft}>
+                    <Text
+                      style={[styles.percentText, { color: allDone ? colors.success : colors.textPrimary }]}
+                    >
+                      {percent}%
+                    </Text>
+                    <View style={styles.progressMeta}>
+                      <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>
+                        {allDone
+                          ? t.home.allDone
+                          : `${totalDrugDoses - takenDrugCount} ${totalDrugDoses - takenDrugCount !== 1 ? t.home.dosesRemaining : t.home.doseRemaining}`}
+                      </Text>
+                      <Text style={[styles.progressSublabel, { color: colors.textTertiary }]}>
+                        {takenDrugCount}/{totalDrugDoses} taken
+                      </Text>
+                    </View>
+                  </View>
+                  {monthStats.streak > 0 && (
+                    <View style={[styles.streakBadge, { backgroundColor: colors.warningLight }]}>
+                      <MaterialCommunityIcons name="fire" size={14} color={colors.warning} />
+                      <Text style={[styles.streakText, { color: colors.warning }]}>
+                        {monthStats.streak}d
+                      </Text>
+                    </View>
+                  )}
                 </View>
-                <View style={[styles.progressTrack, { backgroundColor: `${colors.primary}20` }]}>
+                <View style={[styles.progressTrack, { backgroundColor: colors.divider }]}>
                   <Animated.View
                     style={[
                       styles.progressFill,
@@ -340,21 +408,22 @@ export default function HomeScreen() {
                     ]}
                   />
                 </View>
-                <View style={styles.progressFooter}>
-                  <Text style={[styles.progressSubtitle, { color: colors.primary }]}>
-                    {takenDrugCount} {t.home.ofDosesTaken.replace("{total}", String(totalDrugDoses))}
-                  </Text>
-                  {monthStats.streak > 0 && (
-                    <View style={[styles.streakBadge, { backgroundColor: colors.warningLight }]}>
-                      <MaterialCommunityIcons name="fire" size={14} color={colors.warning} />
-                      <Text style={[styles.streakText, { color: colors.warning }]}>
-                        {monthStats.streak}d
-                      </Text>
-                    </View>
-                  )}
-                </View>
               </View>
             )}
+
+            {/* Next Dose card */}
+            <NextDoseCard
+              reminders={todayReminders}
+              takenDrugIds={takenDrugIds}
+              skippedDrugIds={skippedDrugIds}
+              colors={colors}
+              t={t}
+            />
+
+            {/* Weekly chart */}
+            <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <WeeklyChart logs={logs} totalRemindersPerDay={totalDrugDoses} />
+            </View>
           </View>
         }
         ListEmptyComponent={
@@ -369,9 +438,11 @@ export default function HomeScreen() {
         renderItem={({ item }) => {
           if (item.type === "period") {
             return (
-              <Text style={[styles.periodHeader, { color: colors.textSecondary }]}>
-                {item.label}
-              </Text>
+              <View style={[styles.periodRow, { borderLeftColor: colors.primary }]}>
+                <Text style={[styles.periodHeader, { color: colors.textSecondary }]}>
+                  {item.label}
+                </Text>
+              </View>
             );
           }
           return (
@@ -479,13 +550,13 @@ const styles = StyleSheet.create({
     fontWeight: Typography.bold,
   },
   date: {
-    ...Typography.base,
-    marginTop: Spacing.xs,
+    ...Typography.sm,
+    marginTop: 2,
   },
   greetingIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -493,34 +564,42 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     padding: Spacing.md,
     marginBottom: Spacing.md,
+    borderWidth: 1,
   },
-  progressInfo: {
+  progressTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.sm,
+  },
+  progressLeft: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.sm,
-    marginBottom: Spacing.sm,
   },
-  progressTitle: {
-    ...Typography.md,
+  percentText: {
+    fontSize: 32,
+    lineHeight: 38,
+    fontWeight: "700",
+  },
+  progressMeta: {
+    gap: 2,
+  },
+  progressLabel: {
+    ...Typography.sm,
     fontWeight: Typography.semibold,
   },
+  progressSublabel: {
+    ...Typography.xs,
+  },
   progressTrack: {
-    height: 8,
+    height: 6,
     borderRadius: Radius.full,
     overflow: "hidden",
-    marginBottom: Spacing.sm,
   },
   progressFill: {
     height: "100%",
     borderRadius: Radius.full,
-  },
-  progressFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  progressSubtitle: {
-    ...Typography.xs,
   },
   streakBadge: {
     flexDirection: "row",
@@ -534,14 +613,56 @@ const styles = StyleSheet.create({
     ...Typography.xs,
     fontWeight: Typography.semibold,
   },
-  periodHeader: {
+  nextDoseCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+  },
+  nextDoseLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  nextDoseLabel: {
+    ...Typography.sm,
+    fontWeight: Typography.medium,
+  },
+  nextDoseRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  nextDoseTime: {
     ...Typography.sm,
     fontWeight: Typography.semibold,
+  },
+  nextDoseCountdown: {
+    ...Typography.xs,
+    fontWeight: Typography.semibold,
+  },
+  chartCard: {
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+  },
+  periodRow: {
+    borderLeftWidth: 3,
+    paddingLeft: Spacing.sm,
+    marginLeft: Spacing.xs,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.xs,
+  },
+  periodHeader: {
+    ...Typography.xs,
+    fontWeight: Typography.semibold,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
+    letterSpacing: 0.8,
   },
   list: {
     padding: Spacing.md,

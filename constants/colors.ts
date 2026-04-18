@@ -1,21 +1,23 @@
 export const Colors = {
-  // Primary — rich forest green (medical, trustworthy)
-  primary: "#16A34A",
-  primaryLight: "#DCFCE7",
-  primaryDark: "#15803D",
+  // Primary — teal-green (clinical, trustworthy)
+  primary: "#0D9668",
+  primaryLight: "#D1FAE5",
+  primaryDark: "#065F46",
 
   // Semantic
-  success: "#22C55E",
-  successLight: "#DCFCE7",
+  success: "#10B981",
+  successLight: "#D1FAE5",
   warning: "#F59E0B",
   warningLight: "#FEF3C7",
   danger: "#EF4444",
   dangerLight: "#FEE2E2",
   info: "#3B82F6",
   infoLight: "#EFF6FF",
+  neutral: "#94A3B8",
+  neutralLight: "#F1F5F9",
 
-  // Neutrals
-  background: "#F8FAF8",
+  // Neutrals — neutral gray tones
+  background: "#F8F9FA",
   card: "#FFFFFF",
   border: "#E2E8F0",
   divider: "#F1F5F9",
@@ -36,11 +38,23 @@ export const Colors = {
     purple: "#8B5CF6",
   },
 
-  // Dark mode
+  // Chart colors — distinct hues for multi-drug adherence charts
+  chart: {
+    teal: "#0D9488",
+    blue: "#2563EB",
+    indigo: "#6366F1",
+    amber: "#D97706",
+    rose: "#E11D48",
+    emerald: "#059669",
+    violet: "#7C3AED",
+    slate: "#475569",
+  },
+
+  // Dark mode — neutral dark tones
   dark: {
-    background: "#0C1410",
-    card: "#1A2620",
-    border: "#2D3B34",
+    background: "#0F1117",
+    card: "#1A1D27",
+    border: "#2A2D37",
     textPrimary: "#F1F5F9",
     textSecondary: "#94A3B8",
   },
@@ -70,6 +84,9 @@ export function getColors(scheme: ColorScheme) {
         dangerLight: "#450A0A",
         info: "#60A5FA",
         infoLight: "#172554",
+        neutral: "#64748B",
+        neutralLight: "#1E293B",
+        chart: Colors.chart,
         pill: Colors.pill,
       }
     : {
@@ -92,6 +109,9 @@ export function getColors(scheme: ColorScheme) {
         dangerLight: Colors.dangerLight,
         info: Colors.info,
         infoLight: Colors.infoLight,
+        neutral: Colors.neutral,
+        neutralLight: Colors.neutralLight,
+        chart: Colors.chart,
         pill: Colors.pill,
       };
 }

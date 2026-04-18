@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { getColors } from "@/constants/colors";
 import { Typography } from "@/constants/typography";
 import { Spacing, Radius } from "@/constants/spacing";
@@ -23,9 +24,13 @@ import { hasNotificationPermission } from "@/services/notification-service";
 import {
   clearAllData,
   exportAllData,
+  getAllDrugs,
+  getAllReminders,
+  getLogsForRange,
 } from "@/services/database";
 import { setSetting } from "@/services/settings-service";
 import { ToastSnackbar } from "@/components/toast-snackbar";
+import { toDateString } from "@/utils/date-helpers";
 
 const THEME_OPTIONS: { value: ThemePreference; icon: string }[] = [
   { value: "system", icon: "theme-light-dark" },
@@ -53,6 +58,43 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     hasNotificationPermission().then(setNotifEnabled);
+  }, []);
+
+  const healthMetrics = useMemo(() => {
+    const drugs = getAllDrugs();
+    const reminders = getAllReminders();
+    const totalMeds = drugs.length;
+
+    const today = new Date();
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const logs = getLogsForRange(toDateString(startOfMonth), toDateString(endOfMonth));
+    const takenLogs = logs.filter((l) => l.status === "taken");
+    const uniqueDays = new Set(takenLogs.map((l) => l.date)).size;
+
+    let streak = 0;
+    const checkDate = new Date(today);
+    for (let i = 0; i < 365; i++) {
+      const dateStr = toDateString(checkDate);
+      const dayLogs = logs.filter((l) => l.date === dateStr);
+      if (dayLogs.length > 0 && dayLogs.every((l) => l.status === "taken")) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else if (dayLogs.length > 0) {
+        break;
+      } else {
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+    }
+
+    const lowStockCount = drugs.filter(
+      (d) =>
+        d.currentStock !== undefined &&
+        d.stockThreshold !== undefined &&
+        d.currentStock <= d.stockThreshold,
+    ).length;
+
+    return { totalMeds, daysTracked: uniqueDays, streak, lowStockCount };
   }, []);
 
   const handleExportData = useCallback(async () => {
@@ -112,11 +154,56 @@ export default function SettingsScreen() {
       edges={["top"]}
     >
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.textPrimary }]}>
             {t.settings.title}
           </Text>
+        </View>
+
+        {/* Health Metrics */}
+        <View style={styles.metricsRow}>
+          <View
+            style={[
+              styles.metricCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <MaterialCommunityIcons name="pill" size={20} color={colors.primary} />
+            <Text style={[styles.metricValue, { color: colors.textPrimary }]}>
+              {healthMetrics.totalMeds}
+            </Text>
+            <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>
+              {t.medications.allMedications.split(" ")[0]}
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.metricCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <MaterialCommunityIcons name="calendar-check" size={20} color={colors.success} />
+            <Text style={[styles.metricValue, { color: colors.textPrimary }]}>
+              {healthMetrics.streak}
+            </Text>
+            <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>
+              {t.calendar.dayStreak}
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.metricCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <MaterialCommunityIcons name="chart-timeline-variant" size={20} color={colors.info} />
+            <Text style={[styles.metricValue, { color: colors.textPrimary }]}>
+              {healthMetrics.daysTracked}
+            </Text>
+            <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>
+              {t.calendar.adherence.split(" ")[0]}
+            </Text>
+          </View>
         </View>
 
         {/* Notifications */}
@@ -126,20 +213,25 @@ export default function SettingsScreen() {
             { backgroundColor: colors.card, borderColor: colors.border },
           ]}
         >
-          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-            {t.settings.notifications}
-          </Text>
+          <View style={styles.sectionHeader}>
+            <MaterialCommunityIcons name="bell-outline" size={18} color={colors.textSecondary} />
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+              {t.settings.notifications}
+            </Text>
+          </View>
           <Pressable
             onPress={() => Linking.openSettings()}
             style={({ pressed }) => [styles.row, { opacity: pressed ? 0.7 : 1 }]}
             accessibilityLabel="Open notification settings"
           >
             <View style={styles.rowLeft}>
-              <MaterialCommunityIcons
-                name="bell-outline"
-                size={22}
-                color={colors.textPrimary}
-              />
+              <View style={[styles.rowIconWrap, { backgroundColor: colors.primaryLight }]}>
+                <MaterialCommunityIcons
+                  name={notifEnabled ? "bell-ring-outline" : "bell-off-outline"}
+                  size={20}
+                  color={colors.primary}
+                />
+              </View>
               <View style={styles.rowText}>
                 <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>
                   {t.settings.notifications}
@@ -168,10 +260,13 @@ export default function SettingsScreen() {
             { backgroundColor: colors.card, borderColor: colors.border },
           ]}
         >
-          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-            {t.settings.appearance}
-          </Text>
-          <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>
+          <View style={styles.sectionHeader}>
+            <MaterialCommunityIcons name="palette-outline" size={18} color={colors.textSecondary} />
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+              {t.settings.appearance}
+            </Text>
+          </View>
+          <Text style={[styles.rowLabel, { color: colors.textPrimary, marginBottom: Spacing.sm }]}>
             {t.settings.theme}
           </Text>
           <View style={styles.themeRow}>
@@ -184,12 +279,8 @@ export default function SettingsScreen() {
                   style={[
                     styles.themeOption,
                     {
-                      backgroundColor: selected
-                        ? colors.primary
-                        : colors.background,
-                      borderColor: selected
-                        ? colors.primary
-                        : colors.border,
+                      backgroundColor: selected ? colors.primary : colors.background,
+                      borderColor: selected ? colors.primary : colors.border,
                     },
                   ]}
                   accessibilityLabel={`${themeLabels[option.value]}${selected ? ", selected" : ""}`}
@@ -198,19 +289,13 @@ export default function SettingsScreen() {
                   <MaterialCommunityIcons
                     name={option.icon as any}
                     size={22}
-                    color={
-                      selected
-                        ? colors.textInverse
-                        : colors.textSecondary
-                    }
+                    color={selected ? colors.textInverse : colors.textSecondary}
                   />
                   <Text
                     style={[
                       styles.themeOptionLabel,
                       {
-                        color: selected
-                          ? colors.textInverse
-                          : colors.textSecondary,
+                        color: selected ? colors.textInverse : colors.textSecondary,
                       },
                     ]}
                   >
@@ -229,9 +314,12 @@ export default function SettingsScreen() {
             { backgroundColor: colors.card, borderColor: colors.border },
           ]}
         >
-          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-            {t.settings.language}
-          </Text>
+          <View style={styles.sectionHeader}>
+            <MaterialCommunityIcons name="translate" size={18} color={colors.textSecondary} />
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+              {t.settings.language}
+            </Text>
+          </View>
           <View style={styles.themeRow}>
             {LANGUAGE_OPTIONS.map((option) => {
               const selected = locale === option.value;
@@ -242,12 +330,8 @@ export default function SettingsScreen() {
                   style={[
                     styles.themeOption,
                     {
-                      backgroundColor: selected
-                        ? colors.primary
-                        : colors.background,
-                      borderColor: selected
-                        ? colors.primary
-                        : colors.border,
+                      backgroundColor: selected ? colors.primary : colors.background,
+                      borderColor: selected ? colors.primary : colors.border,
                     },
                   ]}
                   accessibilityLabel={`${languageLabels[option.value]}${selected ? ", selected" : ""}`}
@@ -256,19 +340,13 @@ export default function SettingsScreen() {
                   <MaterialCommunityIcons
                     name={option.icon as any}
                     size={22}
-                    color={
-                      selected
-                        ? colors.textInverse
-                        : colors.textSecondary
-                    }
+                    color={selected ? colors.textInverse : colors.textSecondary}
                   />
                   <Text
                     style={[
                       styles.themeOptionLabel,
                       {
-                        color: selected
-                          ? colors.textInverse
-                          : colors.textSecondary,
+                        color: selected ? colors.textInverse : colors.textSecondary,
                       },
                     ]}
                   >
@@ -287,9 +365,43 @@ export default function SettingsScreen() {
             { backgroundColor: colors.card, borderColor: colors.border },
           ]}
         >
-          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-            {t.settings.data}
-          </Text>
+          <View style={styles.sectionHeader}>
+            <MaterialCommunityIcons name="database-outline" size={18} color={colors.textSecondary} />
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+              {t.settings.data}
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => router.push("/report")}
+            style={({ pressed }) => [styles.row, { opacity: pressed ? 0.7 : 1 }]}
+            accessibilityLabel={t.reports.generateReport}
+          >
+            <View style={styles.rowLeft}>
+              <View style={[styles.rowIconWrap, { backgroundColor: colors.successLight }]}>
+                <MaterialCommunityIcons
+                  name="file-document-outline"
+                  size={20}
+                  color={colors.success}
+                />
+              </View>
+              <View style={styles.rowText}>
+                <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>
+                  {t.reports.generateReport}
+                </Text>
+                <Text style={[styles.rowSubtext, { color: colors.textTertiary }]}>
+                  {t.reports.title}
+                </Text>
+              </View>
+            </View>
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={22}
+              color={colors.textTertiary}
+            />
+          </Pressable>
+
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
           <Pressable
             onPress={handleExportData}
             disabled={exporting}
@@ -297,11 +409,13 @@ export default function SettingsScreen() {
             accessibilityLabel={t.settings.exportData}
           >
             <View style={styles.rowLeft}>
-              <MaterialCommunityIcons
-                name="download-outline"
-                size={22}
-                color={colors.textPrimary}
-              />
+              <View style={[styles.rowIconWrap, { backgroundColor: colors.infoLight }]}>
+                <MaterialCommunityIcons
+                  name="download-outline"
+                  size={20}
+                  color={colors.info}
+                />
+              </View>
               <View style={styles.rowText}>
                 <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>
                   {t.settings.exportData}
@@ -330,11 +444,13 @@ export default function SettingsScreen() {
             accessibilityLabel={t.settings.clearAllData}
           >
             <View style={styles.rowLeft}>
-              <MaterialCommunityIcons
-                name="delete-outline"
-                size={22}
-                color={colors.danger}
-              />
+              <View style={[styles.rowIconWrap, { backgroundColor: colors.dangerLight }]}>
+                <MaterialCommunityIcons
+                  name="delete-outline"
+                  size={20}
+                  color={colors.danger}
+                />
+              </View>
               <View style={styles.rowText}>
                 <Text style={[styles.rowLabel, { color: colors.danger }]}>
                   {t.settings.clearAllData}
@@ -359,22 +475,25 @@ export default function SettingsScreen() {
             { backgroundColor: colors.card, borderColor: colors.border },
           ]}
         >
-          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-            {t.settings.about}
-          </Text>
-          <View style={styles.aboutRow}>
-            <MaterialCommunityIcons
-              name="pill"
-              size={24}
-              color={colors.primary}
-            />
-            <Text style={[styles.appName, { color: colors.textPrimary }]}>
-              ReminDrugs
+          <View style={styles.sectionHeader}>
+            <MaterialCommunityIcons name="information-outline" size={18} color={colors.textSecondary} />
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+              {t.settings.about}
             </Text>
           </View>
-          <Text style={[styles.version, { color: colors.textTertiary }]}>
-            Version 1.0.0
-          </Text>
+          <View style={styles.aboutRow}>
+            <View style={[styles.appIcon, { backgroundColor: colors.primary }]}>
+              <MaterialCommunityIcons name="pill" size={24} color="#FFFFFF" />
+            </View>
+            <View>
+              <Text style={[styles.appName, { color: colors.textPrimary }]}>
+                ReminDrugs
+              </Text>
+              <Text style={[styles.version, { color: colors.textTertiary }]}>
+                Version 1.0.0
+              </Text>
+            </View>
+          </View>
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <Text style={[styles.privacyNote, { color: colors.textSecondary }]}>
             {t.settings.privacyNote}
@@ -405,17 +524,44 @@ const styles = StyleSheet.create({
     ...Typography.xl,
     fontWeight: Typography.bold,
   },
+  metricsRow: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  metricCard: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  metricValue: {
+    ...Typography.xl,
+    fontWeight: Typography.bold,
+  },
+  metricLabel: {
+    ...Typography.xs,
+    fontWeight: Typography.medium,
+  },
   sectionCard: {
     borderWidth: 1,
     borderRadius: Radius.lg,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
   },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    marginBottom: Spacing.md,
+  },
   sectionLabel: {
     ...Typography.xs,
     textTransform: "uppercase",
     letterSpacing: 0.5,
-    marginBottom: Spacing.md,
+    fontWeight: Typography.semibold,
   },
   row: {
     flexDirection: "row",
@@ -428,6 +574,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Spacing.md,
     flex: 1,
+  },
+  rowIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.md,
+    alignItems: "center",
+    justifyContent: "center",
   },
   rowText: {
     flex: 1,
@@ -466,8 +619,15 @@ const styles = StyleSheet.create({
   aboutRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.sm,
-    marginBottom: Spacing.xs,
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  appIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: Radius.md,
+    alignItems: "center",
+    justifyContent: "center",
   },
   appName: {
     ...Typography.md,
@@ -475,7 +635,7 @@ const styles = StyleSheet.create({
   },
   version: {
     ...Typography.sm,
-    marginBottom: Spacing.md,
+    marginTop: 2,
   },
   privacyNote: {
     ...Typography.sm,

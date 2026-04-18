@@ -1,19 +1,15 @@
 import { create } from "zustand";
 import type { AdherenceLog, DoseStatus } from "@/types/adherence";
 import {
-  logDose as dbLogDose,
   deleteLogByDrugAndDate,
   deleteLogByReminderDrugAndDate as dbDeleteLogByReminderDrugAndDate,
   deleteLogByReminderAndDate as dbDeleteLogsByReminderAndDate,
   getLogsForRange,
   updateLogStatus as dbUpdateLogStatus,
   deleteLog as dbDeleteLog,
-  deductDrugStock,
-  getDrugById,
 } from "@/services/database";
-import { checkAndScheduleRefillAlert } from "@/services/notification-service";
+import { recordDose } from "@/services/dose-recording";
 import { toDateString, generateId } from "@/utils/date-helpers";
-import { drugEvents } from "@/services/event-bus";
 
 interface AdherenceState {
   logs: AdherenceLog[];
@@ -35,8 +31,8 @@ export const useAdherenceStore = create<AdherenceState>((set, get) => ({
 
   loadFromDB: () => {
     const today = new Date();
-    const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-    const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const startDate = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+    const endDate = new Date(today.getFullYear(), today.getMonth() + 2, 0);
     const rangeLogs = getLogsForRange(
       toDateString(startDate),
       toDateString(endDate),
@@ -56,19 +52,13 @@ export const useAdherenceStore = create<AdherenceState>((set, get) => ({
 
     // Optimistic: update store first, then persist
     set((state) => ({ logs: [...state.logs, log] }));
-    dbLogDose(log);
-
-    // Deduct stock when marking as taken
-    if (status === "taken") {
-      const newStock = deductDrugStock(drugId);
-      if (newStock !== null) {
-        drugEvents.emit();
-        const drug = getDrugById(drugId);
-        if (drug) {
-          checkAndScheduleRefillAlert(drug, reminderId).catch(() => {});
-        }
-      }
-    }
+    recordDose({
+      reminderId,
+      drugId,
+      date,
+      status,
+      takenAt: log.takenAt,
+    });
   },
 
   updateStatus: (id, status) => {

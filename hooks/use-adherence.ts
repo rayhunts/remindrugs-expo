@@ -89,29 +89,24 @@ export function useAdherence() {
       const endDate = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`;
       const monthLogs = logs.filter((l) => l.date >= startDate && l.date <= endDate);
 
-      const dateMap = new Map<string, { taken: number; missed: number }>();
+      const dateMap = new Map<string, { taken: number; total: number }>();
 
       for (const log of monthLogs) {
-        const existing = dateMap.get(log.date) ?? { taken: 0, missed: 0 };
+        const existing = dateMap.get(log.date) ?? { taken: 0, total: 0 };
+        existing.total++;
         if (log.status === "taken") existing.taken++;
-        if (log.status === "missed") existing.missed++;
         dateMap.set(log.date, existing);
       }
-
-      const totalDrugsPerDay = reminders.reduce(
-        (sum, r) => sum + ('drugs' in r ? (r as any).drugs.length : 1),
-        0,
-      );
-      const total = totalDrugsPerDay || 1;
 
       const marked: Record<string, { dots: Array<{ color: string }> }> = {};
 
       for (const [date, counts] of dateMap) {
-        const color = counts.taken === 0
-          ? "#EF4444"
-          : counts.taken >= total
-            ? "#22C55E"
-            : "#F59E0B";
+        const pct = counts.total > 0 ? Math.round((counts.taken / counts.total) * 100) : 0;
+        const color = pct >= 80
+          ? "#22C55E"
+          : pct >= 50
+            ? "#F59E0B"
+            : "#EF4444";
         marked[date] = { dots: [{ color }] };
       }
 

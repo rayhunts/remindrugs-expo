@@ -1,26 +1,30 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef } from "react";
+import { AppState, BackHandler, type AppStateStatus } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import * as Notifications from "expo-notifications";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { initDatabase, getReminderById, getDrugsForReminder, logDose } from "@/services/database";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import { initDatabase, getReminderById, getDrugsForReminder } from "@/services/database";
 import {
   setNotificationHandler,
   setupNotificationChannel,
   scheduleSnooze,
 } from "@/services/notification-service";
-import { adherenceEvents } from "@/services/event-bus";
+import { recordDosesForReminder } from "@/services/dose-recording";
 import { ThemeProvider } from "@/contexts/theme-context";
 import { LanguageProvider } from "@/contexts/language-context";
 import { useThemeColor } from "@/hooks/use-theme-color";
-import { generateId, toDateString } from "@/utils/date-helpers";
+import { toDateString } from "@/utils/date-helpers";
 import { getSetting } from "@/services/settings-service";
 import { router } from "expo-router";
 
 SplashScreen.preventAutoHideAsync();
 
 setNotificationHandler();
+
+const recentlyProcessedNotifications = new Set<string>();
 
 function ThemedStatusBar() {
   const statusBarBg = useThemeColor({}, "background") as string;
@@ -31,6 +35,8 @@ function ThemedStatusBar() {
 export default function RootLayout() {
   const notificationListener = useRef<ReturnType<typeof Notifications.addNotificationReceivedListener> | null>(null);
   const responseListener = useRef<ReturnType<typeof Notifications.addNotificationResponseReceivedListener> | null>(null);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const wasBackgroundRef = useRef(false);
 
   useEffect(() => {
     async function init() {
@@ -48,6 +54,23 @@ export default function RootLayout() {
       }
     }
     init();
+  }, []);
+
+  // Track app state to detect when notification actions bring app to foreground.
+  // Known Android OS limitation: any notification interaction (including action buttons
+  // like "Mark Done") brings the app to the foreground. This is OS behavior and cannot
+  // be fully prevented without background task runners (e.g. expo-task-manager), which
+  // are out of scope. Instead, we detect this case and move the app back to background.
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (nextState) => {
+      if (appStateRef.current === "background" && nextState === "active") {
+        wasBackgroundRef.current = true;
+      } else if (nextState === "background") {
+        wasBackgroundRef.current = false;
+      }
+      appStateRef.current = nextState;
+    });
+    return () => sub.remove();
   }, []);
 
   useEffect(() => {
@@ -69,23 +92,29 @@ export default function RootLayout() {
 
         if (!reminderId) return;
 
+        const notificationId = response.notification.request.identifier;
+        if (recentlyProcessedNotifications.has(notificationId)) return;
+        recentlyProcessedNotifications.add(notificationId);
+        setTimeout(() => recentlyProcessedNotifications.delete(notificationId), 2000);
+        const cameFromBackground = wasBackgroundRef.current;
+        wasBackgroundRef.current = false;
+
         if (actionId === "mark-done") {
           try {
             const today = toDateString(new Date());
-            const drugs = getDrugsForReminder(reminderId);
-            for (const drug of drugs) {
-              logDose({
-                id: generateId(),
-                reminderId,
-                drugId: drug.id,
-                date: today,
-                status: "taken",
-                takenAt: Date.now(),
-              });
-            }
-            adherenceEvents.emit();
+            recordDosesForReminder({
+              reminderId,
+              date: today,
+              status: "taken",
+              takenAt: Date.now(),
+            });
           } catch (e) {
             console.error("Failed to log dose from notification:", e);
+          }
+          Notifications.dismissNotificationAsync(notificationId);
+          // Android brought the app to foreground for this action; move it back
+          if (cameFromBackground) {
+            BackHandler.exitApp();
           }
         } else if (actionId === "snooze") {
           const reminder = getReminderById(reminderId);
@@ -95,6 +124,7 @@ export default function RootLayout() {
               console.error("Failed to snooze:", e),
             );
           }
+          Notifications.dismissNotificationAsync(notificationId);
         }
         // Default tap (no action) — just open the app, handled by navigator
       });
@@ -107,6 +137,7 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <BottomSheetModalProvider>
       <ThemeProvider>
         <LanguageProvider>
         <Stack screenOptions={{ headerBackTitle: "Back" }}>
@@ -124,6 +155,14 @@ export default function RootLayout() {
             options={{ title: "Edit Medication" }}
           />
           <Stack.Screen
+            name="report"
+            options={{ title: "Adherence Report" }}
+          />
+          <Stack.Screen
+            name="interactions"
+            options={{ title: "Drug Interactions", headerBackTitle: "Back" }}
+          />
+          <Stack.Screen
             name="onboarding"
             options={{ headerShown: false }}
           />
@@ -131,6 +170,7 @@ export default function RootLayout() {
         <ThemedStatusBar />
         </LanguageProvider>
       </ThemeProvider>
+      </BottomSheetModalProvider>
     </GestureHandlerRootView>
   );
 }

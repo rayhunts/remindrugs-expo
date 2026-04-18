@@ -1,8 +1,33 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import type { Drug, Reminder, Weekday } from "@/types/reminder";
+import type { AdherenceLog } from "@/types/adherence";
 import { toExpoWeekday, buildNotificationBody, getNotificationTexts } from "@/utils/notification-helpers";
 import { SchedulableTriggerInputTypes } from "expo-notifications";
+
+export function estimateDaysUntilEmpty(
+  drug: Drug,
+  adherenceLogs: AdherenceLog[],
+): number | null {
+  if (drug.currentStock === undefined || drug.currentStock <= 0) return null;
+
+  const takenLogs = adherenceLogs.filter((l) => l.status === "taken");
+  if (takenLogs.length < 3) return null;
+
+  const dates = [...new Set(takenLogs.map((l) => l.date))].sort();
+  const firstDate = dates[0];
+  const lastDate = dates[dates.length - 1];
+
+  const firstMs = new Date(firstDate).getTime();
+  const lastMs = new Date(lastDate).getTime();
+  const daySpan = (lastMs - firstMs) / (1000 * 60 * 60 * 24);
+  if (daySpan < 3) return null;
+
+  const dailyRate = takenLogs.length / (daySpan + 1);
+  if (dailyRate <= 0) return null;
+
+  return Math.floor(drug.currentStock / dailyRate);
+}
 
 export function setNotificationHandler(): void {
   Notifications.setNotificationHandler({
@@ -125,19 +150,44 @@ export async function scheduleRefillReminder(drug: Drug, reminderId: string): Pr
 export async function checkAndScheduleRefillAlert(
   drug: Drug,
   reminderId: string,
+  adherenceLogs?: AdherenceLog[],
 ): Promise<void> {
   if (drug.currentStock === undefined || drug.stockThreshold === undefined) return;
-  if (drug.currentStock > drug.stockThreshold) return;
 
   const n = getNotificationTexts();
+  let shouldAlert = drug.currentStock <= drug.stockThreshold;
+
+  let body = n.refillBodyShort
+    .replace("{count}", String(drug.currentStock))
+    .replace("{form}", drug.form);
+
+  if (adherenceLogs) {
+    const daysLeft = estimateDaysUntilEmpty(drug, adherenceLogs);
+    if (daysLeft !== null) {
+      const emptyDate = new Date(
+        Date.now() + daysLeft * 24 * 60 * 60 * 1000,
+      );
+      const dateStr = emptyDate.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      });
+      body = n.refillBodyShort
+        .replace("{count}", String(drug.currentStock))
+        .replace("{form}", drug.form) + ` (~${daysLeft}d, ${dateStr})`;
+      if (daysLeft <= 7) shouldAlert = true;
+    }
+  }
+
+  if (!shouldAlert) return;
+
   await Notifications.scheduleNotificationAsync({
     content: {
       title: n.refillNeeded.replace("{name}", drug.name),
-      body: n.refillBodyShort.replace("{count}", String(drug.currentStock)).replace("{form}", drug.form),
+      body,
       sound: "pill_bottle_shake.mp3",
       data: { reminderId, drugId: drug.id, type: "refill" },
       categoryIdentifier: "reminder-actions",
     },
-    trigger: null, // immediate
+    trigger: null,
   });
 }

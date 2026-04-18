@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -45,6 +45,9 @@ export default function AddReminderScreen() {
   const [days, setDays] = useState<Weekday[]>([1, 2, 3, 4, 5]);
   const [selectedDrugIds, setSelectedDrugIds] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Progressive disclosure
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Inline new drug form
   const [showNewDrugForm, setShowNewDrugForm] = useState(false);
@@ -172,19 +175,6 @@ export default function AddReminderScreen() {
             <TimePickerField hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} />
           </View>
 
-          {/* Days */}
-          <View style={styles.section}>
-            <View style={styles.frequencyRow}>
-              <DaySelector selectedDays={days} onChange={setDays} />
-              <View style={styles.frequencyBadgeWrap}>
-                <FrequencyBadge type={frequency} />
-              </View>
-            </View>
-            {errors.days ? (
-              <Text style={[styles.errorText, { color: colors.danger }]}>{errors.days}</Text>
-            ) : null}
-          </View>
-
           {/* Medications */}
           <View style={styles.section}>
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t.reminders.medications}</Text>
@@ -306,6 +296,36 @@ export default function AddReminderScreen() {
             ) : null}
           </View>
 
+          {/* More Options toggle */}
+          <Pressable
+            onPress={() => setShowAdvanced((prev) => !prev)}
+            style={[styles.moreOptionsButton, { borderColor: colors.border }]}
+          >
+            <View style={styles.moreOptionsLeft}>
+              <MaterialCommunityIcons
+                name={showAdvanced ? "chevron-up" : "chevron-down"}
+                size={18}
+                color={colors.textSecondary}
+              />
+              <Text style={[styles.moreOptionsText, { color: colors.textSecondary }]}>
+                {t.components.days}
+              </Text>
+            </View>
+            <FrequencyBadge type={frequency} />
+          </Pressable>
+
+          {/* Advanced: Days selector */}
+          {showAdvanced && (
+            <View style={styles.section}>
+              <View style={styles.frequencyRow}>
+                <DaySelector selectedDays={days} onChange={setDays} />
+              </View>
+              {errors.days ? (
+                <Text style={[styles.errorText, { color: colors.danger }]}>{errors.days}</Text>
+              ) : null}
+            </View>
+          )}
+
           {/* Save */}
           <Pressable
             onPress={handleSave}
@@ -342,20 +362,11 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-  input: {
-    borderWidth: 1,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    ...Typography.base,
-    marginBottom: Spacing.md,
-  },
   errorText: {
     ...Typography.xs,
     marginTop: Spacing.xs,
   },
   frequencyRow: { gap: Spacing.sm },
-  frequencyBadgeWrap: { alignItems: "flex-start" },
   drugChipsRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -431,6 +442,25 @@ const styles = StyleSheet.create({
   saveNewDrugText: {
     ...Typography.md,
     fontWeight: Typography.semibold,
+  },
+  moreOptionsButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  moreOptionsLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  moreOptionsText: {
+    ...Typography.sm,
+    fontWeight: Typography.medium,
   },
   saveButton: {
     borderRadius: Radius.md,

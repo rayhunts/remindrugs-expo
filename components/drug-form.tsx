@@ -90,10 +90,10 @@ export function DrugFormComponent({
         </View>
       </View>
 
-      {/* Form */}
+      {/* Form — visual grid */}
       <View style={styles.section}>
         <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t.reminders.form}</Text>
-        <View style={styles.formRow}>
+        <View style={styles.formGrid}>
           {DRUG_FORMS.map((f) => {
             const selected = data.form === f.value;
             return (
@@ -101,23 +101,26 @@ export function DrugFormComponent({
                 key={f.value}
                 onPress={() => onChange({ form: f.value })}
                 style={[
-                  styles.formChip,
+                  styles.formGridItem,
                   {
-                    backgroundColor: selected ? colors.primary : colors.background,
+                    backgroundColor: selected ? colors.primaryLight : colors.card,
                     borderColor: selected ? colors.primary : colors.border,
                   },
                 ]}
               >
-                <View style={styles.formChipContent}>
-                  <MaterialCommunityIcons
-                    name={f.icon as any}
-                    size={14}
-                    color={selected ? colors.textInverse : colors.textSecondary}
-                  />
-                  <Text style={[styles.formChipText, { color: selected ? colors.textInverse : colors.textSecondary }]}>
-                    {f.label}
-                  </Text>
-                </View>
+                <MaterialCommunityIcons
+                  name={f.icon as any}
+                  size={24}
+                  color={selected ? colors.primary : colors.textSecondary}
+                />
+                <Text
+                  style={[
+                    styles.formGridLabel,
+                    { color: selected ? colors.primary : colors.textSecondary },
+                  ]}
+                >
+                  {f.label}
+                </Text>
               </Pressable>
             );
           })}
@@ -222,23 +225,24 @@ const styles = StyleSheet.create({
   },
   flex1: { flex: 1 },
   qtyInput: { width: 70, flex: undefined },
-  formRow: {
+  formGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: Spacing.sm,
   },
-  formChip: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-  },
-  formChipContent: {
-    flexDirection: "row",
+  formGridItem: {
+    width: "30%",
     alignItems: "center",
-    gap: 4,
+    justifyContent: "center",
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.md,
+    borderWidth: 2,
   },
-  formChipText: { ...Typography.xs },
+  formGridLabel: {
+    ...Typography.xs,
+    marginTop: Spacing.xs,
+    fontWeight: Typography.medium,
+  },
   colorRow: {
     flexDirection: "row",
     gap: Spacing.md,

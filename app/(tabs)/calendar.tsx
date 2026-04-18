@@ -29,6 +29,7 @@ import {
 } from "@/utils/date-helpers";
 import type { AdherenceLog } from "@/types/adherence";
 import type { ReminderWithDrugs } from "@/hooks/use-reminders";
+import WeekView from "@/components/week-view";
 
 function StatusBadge({
   status,
@@ -76,6 +77,7 @@ export default function CalendarScreen() {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
   const {
+    logs,
     getMonthlyStats,
     getMarkedDates,
     getLogsForDate,
@@ -94,6 +96,7 @@ export default function CalendarScreen() {
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(() => toDateString(new Date()));
   const [refreshing, setRefreshing] = useState(false);
+  const [viewMode, setViewMode] = useState<"month" | "week">("month");
 
   const stats = useMemo(
     () => getMonthlyStats(currentMonth.year, currentMonth.month),
@@ -221,10 +224,9 @@ export default function CalendarScreen() {
       "stylesheet.day.basic": {
         base: {
           width: 32,
-          height: 44,
+          height: 32,
           alignItems: "center" as unknown as string,
-          justifyContent: "flex-start" as unknown as string,
-          paddingTop: 4,
+          justifyContent: "center" as unknown as string,
         },
         text: {
           ...Typography.sm,
@@ -290,8 +292,44 @@ export default function CalendarScreen() {
       >
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-            {getMonthName(currentMonth.year, currentMonth.month, getLocaleCode(locale))}
+            {viewMode === "month"
+              ? getMonthName(currentMonth.year, currentMonth.month, getLocaleCode(locale))
+              : t.home.weeklyAdherence}
           </Text>
+          <View style={styles.toggleRow}>
+            <Pressable
+              onPress={() => setViewMode("month")}
+              style={[
+                styles.toggleBtn,
+                {
+                  backgroundColor: viewMode === "month" ? colors.primary : "transparent",
+                  borderColor: viewMode === "month" ? colors.primary : colors.border,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="calendar-month"
+                size={16}
+                color={viewMode === "month" ? colors.textInverse : colors.textSecondary}
+              />
+            </Pressable>
+            <Pressable
+              onPress={() => setViewMode("week")}
+              style={[
+                styles.toggleBtn,
+                {
+                  backgroundColor: viewMode === "week" ? colors.primary : "transparent",
+                  borderColor: viewMode === "week" ? colors.primary : colors.border,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="view-week"
+                size={16}
+                color={viewMode === "week" ? colors.textInverse : colors.textSecondary}
+              />
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.statsRow}>
@@ -315,25 +353,34 @@ export default function CalendarScreen() {
           </View>
         </View>
 
-        <View style={[styles.calendarWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Calendar
-            key={scheme}
-            current={`${currentMonth.year}-${String(currentMonth.month + 1).padStart(2, "0")}-01`}
-            markingType="multi-dot"
-            markedDates={selectedMarked}
-            onMonthChange={onMonthChange}
-            onDayPress={onDayPress}
-            theme={calendarTheme}
-            enableSwipeMonths
-            renderArrow={(direction: "left" | "right") => (
-              <MaterialCommunityIcons
-                name={direction === "left" ? "chevron-left" : "chevron-right"}
-                size={24}
-                color={colors.primary}
-              />
-            )}
+        {viewMode === "month" ? (
+          <View style={[styles.calendarWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Calendar
+              key={scheme}
+              current={`${currentMonth.year}-${String(currentMonth.month + 1).padStart(2, "0")}-01`}
+              markingType="multi-dot"
+              markedDates={selectedMarked}
+              onMonthChange={onMonthChange}
+              onDayPress={onDayPress}
+              theme={calendarTheme}
+              enableSwipeMonths
+              renderArrow={(direction: "left" | "right") => (
+                <MaterialCommunityIcons
+                  name={direction === "left" ? "chevron-left" : "chevron-right"}
+                  size={24}
+                  color={colors.primary}
+                />
+              )}
+            />
+          </View>
+        ) : (
+          <WeekView
+            logs={logs}
+            reminders={reminders}
+            selectedDate={selectedDate}
+            onSelectDate={(date) => setSelectedDate(date === selectedDate ? null : date)}
           />
-        </View>
+        )}
 
         {selectedDate && (
           <View style={styles.daySection}>
@@ -471,15 +518,15 @@ export default function CalendarScreen() {
         <View style={styles.legendRow}>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
-            <Text style={[styles.legendText, { color: colors.textSecondary }]}>{t.calendar.allTakenLegend}</Text>
+            <Text style={[styles.legendText, { color: colors.textSecondary }]}>&ge;80%</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: colors.warning }]} />
-            <Text style={[styles.legendText, { color: colors.textSecondary }]}>{t.calendar.partial}</Text>
+            <Text style={[styles.legendText, { color: colors.textSecondary }]}>50-79%</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: colors.danger }]} />
-            <Text style={[styles.legendText, { color: colors.textSecondary }]}>{t.calendar.missed}</Text>
+            <Text style={[styles.legendText, { color: colors.textSecondary }]}>&lt;50%</Text>
           </View>
         </View>
 
@@ -495,6 +542,9 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: Spacing.md,
     paddingBottom: Spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   headerTitle: {
     ...Typography.xl,
@@ -651,4 +701,16 @@ const styles = StyleSheet.create({
     ...Typography.xs,
   },
   bottomSpace: { height: 100 },
+  toggleRow: {
+    flexDirection: "row",
+    gap: Spacing.xs,
+  },
+  toggleBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

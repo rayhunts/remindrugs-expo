@@ -1,7 +1,8 @@
 import React, { useCallback, useRef } from "react";
 import { Pressable, Text, View, StyleSheet } from "react-native";
 import * as Haptics from "expo-haptics";
-import Reanimated, { FadeIn, FadeOut } from "react-native-reanimated";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import Reanimated, { FadeIn } from "react-native-reanimated";
 import { RectButton } from "react-native-gesture-handler";
 import Swipeable, { type SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { getColors } from "@/constants/colors";
@@ -13,7 +14,7 @@ import { TimeDisplay } from "@/components/time-display";
 import { FrequencyBadge } from "@/components/frequency-badge";
 import { DrugChip, MoreChip } from "@/components/drug-chip";
 import type { Drug, Reminder } from "@/types/reminder";
-import { getFrequencyLabel, getDayAbbreviations } from "@/utils/date-helpers";
+import { getFrequencyLabel, getDayAbbreviations, formatTime } from "@/utils/date-helpers";
 
 interface ReminderCardProps {
   reminder: Reminder;
@@ -33,6 +34,20 @@ function SwipeAction({ color, label, onPress }: { color: string; label: string; 
       <Text style={[styles.swipeLabel, { color: colors.textInverse }]}>{label}</Text>
     </RectButton>
   );
+}
+
+function StatusIcon({ allDone, someDone, colors }: {
+  allDone: boolean;
+  someDone: boolean;
+  colors: ReturnType<typeof getColors>;
+}) {
+  if (allDone) {
+    return <MaterialCommunityIcons name="check-circle" size={20} color={colors.success} />;
+  }
+  if (someDone) {
+    return <MaterialCommunityIcons name="clock-outline" size={20} color={colors.warning} />;
+  }
+  return <MaterialCommunityIcons name="circle-outline" size={20} color={colors.neutral} />;
 }
 
 export function ReminderCard({
@@ -58,8 +73,6 @@ export function ReminderCard({
   const allDone = takenCount === totalDrugs;
   const someDone = takenCount > 0 || skippedCount > 0;
   const noneDone = takenCount === 0 && skippedCount === 0;
-
-  const stripeColor = allDone ? colors.success : someDone ? colors.warning : colors.primary;
 
   const swipeableRef = useRef<SwipeableMethods>(null);
 
@@ -113,23 +126,33 @@ export function ReminderCard({
         },
       ]}
     >
-      <View style={[styles.stripe, { backgroundColor: stripeColor }]} />
-
       <View style={styles.content}>
-        {/* Header row */}
+        {/* Header: status icon + name + time + frequency */}
         <View style={styles.header}>
-          <Text
-            style={[
-              styles.name,
-              { color: allDone ? colors.success : colors.textPrimary },
-            ]}
-          >
-            {reminder.name}
-          </Text>
+          <View style={styles.headerLeft}>
+            <StatusIcon allDone={allDone} someDone={someDone} colors={colors} />
+            <View style={styles.nameCol}>
+              <Text
+                style={[
+                  styles.name,
+                  {
+                    color: allDone ? colors.success : colors.textPrimary,
+                    textDecorationLine: allDone ? "line-through" : "none",
+                  },
+                ]}
+              >
+                {reminder.name}
+              </Text>
+              <Text style={[styles.timeSublabel, { color: colors.textTertiary }]}>
+                {formatTime(reminder.hour, reminder.minute)}
+                {frequency !== "daily" ? ` · ${dayAbbr}` : ` · ${t.common.everyDay}`}
+              </Text>
+            </View>
+          </View>
           <FrequencyBadge type={frequency} />
         </View>
 
-        {/* Drug chips — checkable */}
+        {/* Drug chips */}
         <View style={styles.drugRow}>
           {drugs.slice(0, 3).map((drug) => (
             <DrugChip
@@ -147,14 +170,6 @@ export function ReminderCard({
           {drugs.length > 3 && <MoreChip count={drugs.length - 3} />}
         </View>
 
-        {/* Time + days row */}
-        <View style={styles.metaRow}>
-          <TimeDisplay hour={reminder.hour} minute={reminder.minute} />
-          <Text style={[styles.days, { color: colors.textTertiary }]}>
-            {frequency === "daily" ? t.common.everyDay : dayAbbr}
-          </Text>
-        </View>
-
         {/* Actions */}
         {noneDone && (
           <Pressable
@@ -165,6 +180,7 @@ export function ReminderCard({
             style={[styles.takenButton, { backgroundColor: colors.success }]}
             accessibilityLabel={t.components.markAllTakenA11y.replace("{name}", reminder.name)}
           >
+            <MaterialCommunityIcons name="check" size={16} color={colors.textInverse} />
             <Text style={[styles.takenText, { color: colors.textInverse }]}>
               {t.components.markAllTaken}
             </Text>
@@ -179,6 +195,7 @@ export function ReminderCard({
             }}
             style={[styles.takenButton, { backgroundColor: colors.primary }]}
           >
+            <MaterialCommunityIcons name="check" size={16} color={colors.textInverse} />
             <Text style={[styles.takenText, { color: colors.textInverse }]}>
               {t.components.markRemaining.replace("{count}", String(totalDrugs - takenCount - skippedCount))}
             </Text>
@@ -230,14 +247,11 @@ const styles = StyleSheet.create({
     fontWeight: Typography.semibold,
   },
   card: {
-    flexDirection: "row",
     borderWidth: 1,
     borderRadius: Radius.lg,
     overflow: "hidden",
   },
-  stripe: { width: 4 },
   content: {
-    flex: 1,
     padding: Spacing.md,
   },
   header: {
@@ -246,33 +260,39 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: Spacing.sm,
   },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    flex: 1,
+    marginRight: Spacing.sm,
+  },
+  nameCol: {
+    flex: 1,
+    gap: 1,
+  },
   name: {
     ...Typography.md,
     fontWeight: Typography.semibold,
-    flex: 1,
-    marginRight: Spacing.sm,
+  },
+  timeSublabel: {
+    ...Typography.xs,
   },
   drugRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginBottom: Spacing.sm,
-  },
-  metaRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     marginBottom: Spacing.md,
   },
-  days: {
-    ...Typography.sm,
-  },
   takenButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.xs,
     borderRadius: Radius.md,
     paddingVertical: Spacing.sm,
-    alignItems: "center",
   },
   takenText: {
-    ...Typography.md,
+    ...Typography.sm,
     fontWeight: Typography.semibold,
   },
   takenBadge: {

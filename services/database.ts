@@ -162,6 +162,12 @@ function migrateV2ToV3(): void {
 }
 migrateV2ToV3();
 
+// ── Migration: v3 → v4 (unique index on adherence_logs for duplicate prevention) ──
+
+db.execSync(
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_adherence_unique ON adherence_logs(reminder_id, drug_id, date)`,
+);
+
 export function initDatabase(): void {
   // Tables already created at module level above.
 }
@@ -439,6 +445,23 @@ export function logDose(log: AdherenceLog): void {
       log.notes ?? null,
     ],
   );
+}
+
+export function logDoseIgnoreDuplicate(log: AdherenceLog): boolean {
+  const result = db.runSync(
+    `INSERT OR IGNORE INTO adherence_logs (id, reminder_id, drug_id, date, status, taken_at, notes)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      log.id,
+      log.reminderId,
+      log.drugId,
+      log.date,
+      log.status,
+      log.takenAt ?? null,
+      log.notes ?? null,
+    ],
+  );
+  return (result.changes ?? 0) > 0;
 }
 
 export function getLogsForDate(date: string): AdherenceLog[] {
