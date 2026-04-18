@@ -39,10 +39,11 @@ export default function AddReminderScreen() {
   const { t } = useLanguage();
   useHeaderStyle();
 
+  const now = new Date();
   const [name, setName] = useState("");
-  const [hour, setHour] = useState(8);
-  const [minute, setMinute] = useState(0);
-  const [days, setDays] = useState<Weekday[]>([1, 2, 3, 4, 5]);
+  const [hour, setHour] = useState(now.getHours());
+  const [minute, setMinute] = useState(now.getMinutes());
+  const [days, setDays] = useState<Weekday[]>([now.getDay() === 0 ? 7 : now.getDay()]);
   const [selectedDrugIds, setSelectedDrugIds] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -406,7 +407,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: Spacing.sm,
-    marginBottom: Spacing.md,
   },
   formChip: {
     paddingHorizontal: Spacing.sm,
