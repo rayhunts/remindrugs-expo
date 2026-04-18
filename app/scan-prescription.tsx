@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { Stack, router } from "expo-router";
+import { Stack, router, useLocalSearchParams } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
@@ -41,6 +41,8 @@ export default function ScanPrescriptionScreen() {
   const [processing, setProcessing] = useState(false);
   const [ocrRaw, setOcrRaw] = useState<string | null>(null);
 
+  const { source } = useLocalSearchParams<{ source?: string }>();
+
   const pickImage = useCallback(async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return;
@@ -68,6 +70,14 @@ export default function ScanPrescriptionScreen() {
     if (result.canceled || !result.assets[0]) return;
     processImage(result.assets[0].uri);
   }, []);
+
+  useEffect(() => {
+    if (source === "camera") {
+      takePhoto();
+    } else if (source === "gallery") {
+      pickImage();
+    }
+  }, [source]);
 
   const processImage = useCallback(
     async (uri: string) => {
@@ -136,6 +146,7 @@ export default function ScanPrescriptionScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Action buttons */}
+          {!source && (
           <View style={styles.section}>
             <View style={styles.actionRow}>
               <Pressable
@@ -154,6 +165,7 @@ export default function ScanPrescriptionScreen() {
               </Pressable>
             </View>
           </View>
+          )}
 
           {/* Processing indicator */}
           {processing && (
@@ -273,7 +285,7 @@ export default function ScanPrescriptionScreen() {
           )}
 
           {/* Empty state */}
-          {medications.length === 0 && !processing && (
+          {medications.length === 0 && !processing && !source && (
             <View style={styles.emptyContainer}>
               <MaterialCommunityIcons name="pill" size={48} color={colors.textTertiary} />
               <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
