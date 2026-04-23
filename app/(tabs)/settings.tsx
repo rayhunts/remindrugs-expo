@@ -28,7 +28,13 @@ import {
   getAllReminders,
   getLogsForRange,
 } from "@/services/database";
-import { setSetting } from "@/services/settings-service";
+import {
+  setSetting,
+  getSnoozeDuration,
+  setSnoozeDuration,
+  getAutoDismissTimeout,
+  setAutoDismissTimeout,
+} from "@/services/settings-service";
 import { ToastSnackbar } from "@/components/toast-snackbar";
 import { toDateString } from "@/utils/date-helpers";
 
@@ -43,6 +49,9 @@ const LANGUAGE_OPTIONS: { value: Locale; icon: string }[] = [
   { value: "id", icon: "translate" },
 ];
 
+const SNOOZE_OPTIONS = [5, 10, 15, 30];
+const AUTO_DISMISS_OPTIONS = [5, 10, 15, 30];
+
 export default function SettingsScreen() {
   const scheme = useColorScheme();
   const colors = getColors(scheme);
@@ -55,9 +64,16 @@ export default function SettingsScreen() {
     message: string;
     variant: "success" | "error" | "info";
   }>({ visible: false, message: "", variant: "success" });
+  const [snoozeDuration, setLocalSnoozeDuration] = useState(10);
+  const [autoDismissTimeout, setLocalAutoDismissTimeout] = useState(5);
 
   useEffect(() => {
     hasNotificationPermission().then(setNotifEnabled);
+  }, []);
+
+  useEffect(() => {
+    setLocalSnoozeDuration(getSnoozeDuration());
+    setLocalAutoDismissTimeout(getAutoDismissTimeout());
   }, []);
 
   const healthMetrics = useMemo(() => {
@@ -250,6 +266,78 @@ export default function SettingsScreen() {
               size={22}
               color={colors.textTertiary}
             />
+          </Pressable>
+        </View>
+
+        {/* Alarm */}
+        <View
+          style={[
+            styles.sectionCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <View style={styles.sectionHeader}>
+            <MaterialCommunityIcons name="alarm" size={18} color={colors.textSecondary} />
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+              {t.settings.alarmSettings}
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => {
+              const idx = SNOOZE_OPTIONS.indexOf(snoozeDuration);
+              const next = SNOOZE_OPTIONS[(idx + 1) % SNOOZE_OPTIONS.length];
+              setLocalSnoozeDuration(next);
+              setSnoozeDuration(next);
+            }}
+            style={({ pressed }) => [styles.row, { opacity: pressed ? 0.7 : 1 }]}
+            accessibilityLabel={t.settings.snoozeDuration}
+          >
+            <View style={styles.rowLeft}>
+              <View style={[styles.rowIconWrap, { backgroundColor: colors.primaryLight }]}>
+                <MaterialCommunityIcons
+                  name="timer-sand"
+                  size={20}
+                  color={colors.primary}
+                />
+              </View>
+              <View style={styles.rowText}>
+                <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>
+                  {t.settings.snoozeDuration}
+                </Text>
+              </View>
+            </View>
+            <Text style={[styles.rowLabel, { color: colors.primary }]}>
+              {t.settings.minutes.replace("{count}", String(snoozeDuration))}
+            </Text>
+          </Pressable>
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <Pressable
+            onPress={() => {
+              const idx = AUTO_DISMISS_OPTIONS.indexOf(autoDismissTimeout);
+              const next = AUTO_DISMISS_OPTIONS[(idx + 1) % AUTO_DISMISS_OPTIONS.length];
+              setLocalAutoDismissTimeout(next);
+              setAutoDismissTimeout(next);
+            }}
+            style={({ pressed }) => [styles.row, { opacity: pressed ? 0.7 : 1 }]}
+            accessibilityLabel={t.settings.autoDismissTimeout}
+          >
+            <View style={styles.rowLeft}>
+              <View style={[styles.rowIconWrap, { backgroundColor: colors.primaryLight }]}>
+                <MaterialCommunityIcons
+                  name="timer-outline"
+                  size={20}
+                  color={colors.primary}
+                />
+              </View>
+              <View style={styles.rowText}>
+                <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>
+                  {t.settings.autoDismissTimeout}
+                </Text>
+              </View>
+            </View>
+            <Text style={[styles.rowLabel, { color: colors.primary }]}>
+              {t.settings.minutes.replace("{count}", String(autoDismissTimeout))}
+            </Text>
           </Pressable>
         </View>
 

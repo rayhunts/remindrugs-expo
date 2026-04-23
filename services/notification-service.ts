@@ -4,6 +4,27 @@ import type { Drug, Reminder, Weekday } from "@/types/reminder";
 import type { AdherenceLog } from "@/types/adherence";
 import { toExpoWeekday, buildNotificationBody, getNotificationTexts } from "@/utils/notification-helpers";
 import { SchedulableTriggerInputTypes } from "expo-notifications";
+import * as FullscreenAlarm from "@/modules/expo-fullscreen-alarm";
+
+function getNextTriggerMs(weekday: number, hour: number, minute: number): number {
+  const now = new Date();
+  const target = new Date();
+  // weekday: 1=Sunday..7=Saturday (expo-notifications format)
+  // JS: 0=Sunday..6=Saturday
+  const jsDay = weekday - 1;
+  const currentJsDay = now.getDay();
+  const diff = (jsDay - currentJsDay + 7) % 7;
+
+  target.setDate(now.getDate() + diff);
+  target.setHours(hour, minute, 0, 0);
+
+  // If the target time is today and already passed, schedule for next week
+  if (diff === 0 && target.getTime() <= now.getTime()) {
+    target.setDate(target.getDate() + 7);
+  }
+
+  return target.getTime();
+}
 
 export function estimateDaysUntilEmpty(
   drug: Drug,
@@ -46,7 +67,7 @@ export async function setupNotificationChannel(): Promise<void> {
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("remindrugs-channel", {
       name: n.channelName,
-      importance: Notifications.AndroidImportance.HIGH,
+      importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
       sound: "pill_bottle_shake.mp3",
     });
@@ -79,7 +100,11 @@ async function scheduleForDay(reminder: Reminder, drugs: Drug[], day: Weekday): 
       title: reminder.name,
       body: buildNotificationBody(drugs),
       sound: "pill_bottle_shake.mp3",
-      data: { reminderId: reminder.id },
+      data: {
+        reminderId: reminder.id,
+        type: "alarm",
+        reminderName: reminder.name,
+      },
       categoryIdentifier: "reminder-actions",
     },
     trigger: {
@@ -99,21 +124,40 @@ export async function scheduleReminder(reminder: Reminder, drugs: Drug[]): Promi
     const id = await scheduleForDay(reminder, drugs, day);
     ids.push(id);
   }
+
+  // Also schedule native fullscreen alarms for each day
+  for (const day of reminder.days) {
+    const triggerMs = getNextTriggerMs(toExpoWeekday(day), reminder.hour, reminder.minute);
+    await FullscreenAlarm.scheduleAlarm({
+      id: `${reminder.id}_${day}`,
+      title: reminder.name,
+      body: buildNotificationBody(drugs),
+      channelId: "remindrugs-channel",
+      triggerAtMs: triggerMs,
+    });
+  }
+
   return ids;
 }
 
-export async function cancelReminder(notificationIds: string[]): Promise<void> {
+export async function cancelReminder(notificationIds: string[], reminderId?: string): Promise<void> {
   for (const id of notificationIds) {
     await Notifications.cancelScheduledNotificationAsync(id);
+  }
+  if (reminderId) {
+    // Cancel all native alarms for this reminder (one per weekday, 0-6)
+    for (let day = 0; day <= 6; day++) {
+      await FullscreenAlarm.cancelAlarm(`${reminderId}_${day}`);
+    }
   }
 }
 
 export async function rescheduleReminder(reminder: Reminder, drugs: Drug[]): Promise<string[]> {
-  await cancelReminder(reminder.notificationIds);
+  await cancelReminder(reminder.notificationIds, reminder.id);
   return scheduleReminder(reminder, drugs);
 }
 
-export async function scheduleSnooze(reminder: Reminder, drugs: Drug[]): Promise<string> {
+export async function scheduleSnooze(reminder: Reminder, drugs: Drug[], durationMinutes: number = 15): Promise<string> {
   const n = getNotificationTexts();
   const id = await Notifications.scheduleNotificationAsync({
     content: {
@@ -126,9 +170,19 @@ export async function scheduleSnooze(reminder: Reminder, drugs: Drug[]): Promise
     trigger: {
       type: SchedulableTriggerInputTypes.DATE,
       channelId: "remindrugs-channel",
-      date: new Date(Date.now() + 15 * 60 * 1000),
+      date: new Date(Date.now() + durationMinutes * 60 * 1000),
     } as any,
   });
+
+  // Also schedule a native fullscreen alarm for the snooze
+  await FullscreenAlarm.scheduleAlarm({
+    id: `snooze_${reminder.id}`,
+    title: n.snoozed.replace("{name}", reminder.name),
+    body: buildNotificationBody(drugs),
+    channelId: "remindrugs-channel",
+    triggerAtMs: Date.now() + durationMinutes * 60 * 1000,
+  });
+
   return id;
 }
 

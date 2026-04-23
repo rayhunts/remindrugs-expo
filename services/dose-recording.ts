@@ -4,10 +4,12 @@ import {
   getDrugById,
   getDrugsForReminder,
   getLogsForDrug,
+  getLogForReminderDrugDate,
+  updateLogStatusAndTakenAt,
 } from "@/services/database";
 import { adherenceEvents, drugEvents } from "@/services/event-bus";
 import { checkAndScheduleRefillAlert } from "@/services/notification-service";
-import { generateId } from "@/utils/date-helpers";
+import { generateId, toDateString } from "@/utils/date-helpers";
 import type { DoseStatus } from "@/types/adherence";
 
 export function recordDose(params: {
@@ -58,5 +60,36 @@ export function recordDosesForReminder(params: {
       status: params.status,
       takenAt: params.takenAt,
     });
+  }
+}
+
+export function recordLateDose(reminderId: string, drugId: string): boolean {
+  const today = toDateString(new Date());
+  const existing = getLogForReminderDrugDate(reminderId, drugId, today);
+  if (existing) {
+    if (existing.status === "taken") return false;
+    updateLogStatusAndTakenAt(existing.id, "taken", Date.now());
+    deductDrugStock(drugId);
+    const drug = getDrugById(drugId);
+    if (drug) {
+      checkAndScheduleRefillAlert(drug, reminderId, getLogsForDrug(drugId)).catch(() => {});
+    }
+    adherenceEvents.emit();
+    drugEvents.emit();
+    return true;
+  }
+  return recordDose({
+    reminderId,
+    drugId,
+    date: today,
+    status: "taken",
+    takenAt: Date.now(),
+  });
+}
+
+export function recordLateDosesForReminder(reminderId: string): void {
+  const drugs = getDrugsForReminder(reminderId);
+  for (const drug of drugs) {
+    recordLateDose(reminderId, drug.id);
   }
 }

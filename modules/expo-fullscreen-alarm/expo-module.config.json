@@ -1,0 +1,7 @@
+{
+  "platforms": ["android"],
+  "ios": null,
+  "android": {
+    "modules": ["ExpoFullscreenAlarmModule"]
+  }
+}

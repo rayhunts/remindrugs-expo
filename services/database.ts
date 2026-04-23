@@ -534,6 +534,28 @@ export function updateLogStatus(id: string, status: DoseStatus): void {
   db.runSync("UPDATE adherence_logs SET status = ? WHERE id = ?", status, id);
 }
 
+export function updateLogStatusAndTakenAt(id: string, status: DoseStatus, takenAt: number): void {
+  db.runSync("UPDATE adherence_logs SET status = ?, taken_at = ? WHERE id = ?", status, takenAt, id);
+}
+
+export function getLogForReminderDrugDate(reminderId: string, drugId: string, date: string): AdherenceLog | null {
+  const row = db.getFirstSync<{
+    id: string;
+    reminder_id: string;
+    drug_id: string;
+    date: string;
+    status: string;
+    taken_at: number | null;
+    notes: string | null;
+  }>(
+    "SELECT * FROM adherence_logs WHERE reminder_id = ? AND drug_id = ? AND date = ?",
+    reminderId,
+    drugId,
+    date,
+  );
+  return row ? mapAdherenceRow(row) : null;
+}
+
 export function deleteLog(id: string): void {
   db.runSync("DELETE FROM adherence_logs WHERE id = ?", id);
 }

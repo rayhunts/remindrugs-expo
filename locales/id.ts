@@ -151,6 +151,10 @@ const id = {
     daysRemaining: "Hari Tersisa",
     generateReport: "Buat Laporan",
     generateReportDescription: "Buat laporan kepatuhan untuk dokter",
+    alarmSettings: "Alarm",
+    snoozeDuration: "Durasi Tunda",
+    autoDismissTimeout: "Batas Waktu Tutup Otomatis",
+    minutes: "{count} menit",
   },
   onboarding: {
     welcomeTitle: "Selamat Datang\ndi ReminDrugs",
@@ -285,6 +289,14 @@ const id = {
     disclaimer: "Disclaimer",
     disclaimerText: "Informasi ini hanya untuk tujuan edukasi dan bukan pengganti saran medis profesional. Selalu konsultasikan dengan penyedia layanan kesehatan Anda tentang interaksi obat.",
     noInteractions: "Tidak ada interaksi untuk ditampilkan",
+  },
+  alarm: {
+    takeDose: "Minum Obat",
+    snooze: "Tunda",
+    skip: "Lewati",
+    autoDismissIn: "Otomatis tutup dalam {time}",
+    elapsed: "Waktu berlalu",
+    medicationTime: "Waktu Obat",
   },
   reports: {
     title: "Laporan Kepatuhan",

@@ -24,3 +24,21 @@ export function setSetting(key: string, value: string): void {
     value,
   );
 }
+
+export function getSnoozeDuration(): number {
+  const val = getSetting("snooze_duration");
+  return val ? parseInt(val, 10) : 10;
+}
+
+export function setSnoozeDuration(minutes: number): void {
+  setSetting("snooze_duration", String(minutes));
+}
+
+export function getAutoDismissTimeout(): number {
+  const val = getSetting("auto_dismiss_timeout");
+  return val ? parseInt(val, 10) : 5;
+}
+
+export function setAutoDismissTimeout(minutes: number): void {
+  setSetting("auto_dismiss_timeout", String(minutes));
+}

@@ -149,6 +149,10 @@ const en = {
     daysRemaining: "Days Remaining",
     generateReport: "Generate Report",
     generateReportDescription: "Create a doctor-friendly adherence report",
+    alarmSettings: "Alarm",
+    snoozeDuration: "Snooze Duration",
+    autoDismissTimeout: "Auto-Dismiss Timeout",
+    minutes: "{count} min",
   },
   onboarding: {
     welcomeTitle: "Welcome to\nReminDrugs",
@@ -283,6 +287,14 @@ const en = {
     disclaimer: "Disclaimer",
     disclaimerText: "This information is for educational purposes only and is not a substitute for professional medical advice. Always consult your healthcare provider about drug interactions.",
     noInteractions: "No interactions to display",
+  },
+  alarm: {
+    takeDose: "Take Dose",
+    snooze: "Snooze",
+    skip: "Skip",
+    autoDismissIn: "Auto-dismiss in {time}",
+    elapsed: "Elapsed",
+    medicationTime: "Medication Time",
   },
   reports: {
     title: "Adherence Report",

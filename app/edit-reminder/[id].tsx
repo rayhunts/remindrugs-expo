@@ -163,7 +163,7 @@ export default function EditReminderScreen() {
         onPress: async () => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           try {
-            await cancelReminder(originalReminder.notificationIds);
+            await cancelReminder(originalReminder.notificationIds, originalReminder.id);
           } catch {
             // ignore
           }

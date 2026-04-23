@@ -27,6 +27,7 @@ import { PermissionBanner } from "@/components/permission-banner";
 import { ToastSnackbar } from "@/components/toast-snackbar";
 import { ActionSheet, type ActionSheetOption } from "@/components/action-sheet";
 import { hasNotificationPermission } from "@/services/notification-service";
+import { recordLateDosesForReminder } from "@/services/dose-recording";
 import { formatDateLong, formatTime, getLocaleCode, toDateString } from "@/utils/date-helpers";
 import { useLanguage } from "@/contexts/language-context";
 import type { Reminder } from "@/types/reminder";
@@ -154,6 +155,17 @@ export default function HomeScreen() {
     [todayLogs],
   );
 
+  const missedReminders = useMemo(() => {
+    const missedReminderIds = new Set(
+      todayLogs
+        .filter((l) => l.status === "missed")
+        .map((l) => l.reminderId),
+    );
+    return [...missedReminderIds]
+      .map((id) => todayReminders.find((r) => r.id === id))
+      .filter(Boolean) as ReminderWithDrugs[];
+  }, [todayLogs, todayReminders]);
+
   const totalDrugDoses = todayReminders.reduce((sum, r) => sum + r.drugs.length, 0);
   const takenDrugCount = todayReminders.reduce(
     (sum, r) => sum + r.drugs.filter((d) => takenDrugIds.has(`${r.id}:${d.id}`)).length,
@@ -227,6 +239,19 @@ export default function HomeScreen() {
       setToast({ visible: false, message: "", drugId: "", date: "" });
     },
     [undoLog],
+  );
+
+  const handleTakeNow = useCallback(
+    (reminderId: string) => {
+      recordLateDosesForReminder(reminderId);
+      setToast({
+        visible: true,
+        message: t.common.taken,
+        drugId: `__late__:${reminderId}`,
+        date: toDateString(new Date()),
+      });
+    },
+    [t],
   );
 
   const onRefresh = useCallback(async () => {
@@ -424,6 +449,38 @@ export default function HomeScreen() {
             <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <WeeklyChart logs={logs} totalRemindersPerDay={totalDrugDoses} />
             </View>
+
+            {/* Missed doses - Take Now */}
+            {missedReminders.length > 0 && (
+              <View style={{ backgroundColor: colors.warningLight, borderColor: colors.warning, borderWidth: 1, borderRadius: Radius.lg, padding: Spacing.md, marginBottom: Spacing.md }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginBottom: Spacing.sm }}>
+                  <MaterialCommunityIcons name="alert-circle-outline" size={18} color={colors.warning} />
+                  <Text style={[{ color: colors.warning, ...Typography.sm, fontWeight: Typography.semibold }]}>
+                    {t.common.overdueDoses}
+                  </Text>
+                </View>
+                {missedReminders.map((reminder) => (
+                  <View key={reminder.id} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: Spacing.xs }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[{ color: colors.textPrimary, ...Typography.sm, fontWeight: Typography.medium }]}>
+                        {reminder.name}
+                      </Text>
+                      <Text style={[{ color: colors.textTertiary, ...Typography.xs }]}>
+                        {reminder.drugs.map((d) => `${d.name} ${d.dosage}`).join(", ")}
+                      </Text>
+                    </View>
+                    <Pressable
+                      onPress={() => handleTakeNow(reminder.id)}
+                      style={{ backgroundColor: colors.warning, borderRadius: Radius.full, paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs }}
+                    >
+                      <Text style={{ color: "#FFFFFF", ...Typography.xs, fontWeight: Typography.semibold }}>
+                        {t.common.taken}
+                      </Text>
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         }
         ListEmptyComponent={

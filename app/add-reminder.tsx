@@ -43,7 +43,7 @@ export default function AddReminderScreen() {
   const [name, setName] = useState("");
   const [hour, setHour] = useState(now.getHours());
   const [minute, setMinute] = useState(now.getMinutes());
-  const [days, setDays] = useState<Weekday[]>([now.getDay() === 0 ? 7 : now.getDay()]);
+  const [days, setDays] = useState<Weekday[]>([now.getDay() as Weekday]);
   const [selectedDrugIds, setSelectedDrugIds] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 

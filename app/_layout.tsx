@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef } from "react";
-import { AppState, BackHandler, type AppStateStatus } from "react-native";
+import { AppState, type AppStateStatus } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import * as Notifications from "expo-notifications";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -12,6 +12,7 @@ import {
   setupNotificationChannel,
   scheduleSnooze,
 } from "@/services/notification-service";
+import * as FullscreenAlarm from "@/modules/expo-fullscreen-alarm";
 import { recordDosesForReminder } from "@/services/dose-recording";
 import { ThemeProvider } from "@/contexts/theme-context";
 import { LanguageProvider } from "@/contexts/language-context";
@@ -50,6 +51,28 @@ export default function RootLayout() {
         const onboarded = getSetting("onboarded");
         if (onboarded !== "true") {
           router.replace("/onboarding");
+        } else {
+          // Check if app was launched from a notification
+          const lastResponse = await Notifications.getLastNotificationResponseAsync();
+          if (lastResponse) {
+            const data = lastResponse.notification.request.content.data as {
+              reminderId?: string;
+              type?: string;
+            };
+            if (data?.reminderId && (data?.type === "alarm" || data?.type === "snooze")) {
+              setTimeout(() => {
+                router.replace(`/alarm?reminderId=${data.reminderId}`);
+              }, 300);
+            }
+          } else {
+            // Check if launched from fullscreen alarm intent
+            const launchReminderId = await FullscreenAlarm.consumeLaunchReminderId();
+            if (launchReminderId) {
+              setTimeout(() => {
+                router.replace(`/alarm?reminderId=${launchReminderId}`);
+              }, 300);
+            }
+          }
         }
       }
     }
@@ -88,6 +111,7 @@ export default function RootLayout() {
           type?: string;
         };
         const reminderId = data?.reminderId;
+        const type = data?.type;
         const actionId = response.actionIdentifier;
 
         if (!reminderId) return;
@@ -96,8 +120,6 @@ export default function RootLayout() {
         if (recentlyProcessedNotifications.has(notificationId)) return;
         recentlyProcessedNotifications.add(notificationId);
         setTimeout(() => recentlyProcessedNotifications.delete(notificationId), 2000);
-        const cameFromBackground = wasBackgroundRef.current;
-        wasBackgroundRef.current = false;
 
         if (actionId === "mark-done") {
           try {
@@ -112,10 +134,6 @@ export default function RootLayout() {
             console.error("Failed to log dose from notification:", e);
           }
           Notifications.dismissNotificationAsync(notificationId);
-          // Android brought the app to foreground for this action; move it back
-          if (cameFromBackground) {
-            BackHandler.exitApp();
-          }
         } else if (actionId === "snooze") {
           const reminder = getReminderById(reminderId);
           if (reminder) {
@@ -125,8 +143,10 @@ export default function RootLayout() {
             );
           }
           Notifications.dismissNotificationAsync(notificationId);
+        } else if (type === "alarm" || type === "snooze") {
+          // Default tap on alarm/snooze notification -> navigate to alarm screen
+          router.replace(`/alarm?reminderId=${reminderId}`);
         }
-        // Default tap (no action) — just open the app, handled by navigator
       });
 
     return () => {
@@ -165,6 +185,10 @@ export default function RootLayout() {
           <Stack.Screen
             name="onboarding"
             options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="alarm"
+            options={{ headerShown: false, presentation: "fullScreenModal" }}
           />
         </Stack>
         <ThemedStatusBar />
